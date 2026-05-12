@@ -46,6 +46,7 @@
   "license": "ISC",
   "dependencies": {
     "@whiskeysockets/baileys": "^7.0.0-rc10",
+    "nodemailer": "^8.0.7",
     "qrcode": "^1.5.4"
   },
   "devDependencies": {
