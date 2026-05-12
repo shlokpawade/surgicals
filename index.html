@@ -2614,6 +2614,7 @@ function downloadBillPDF() {
 function printBill() { downloadBillPDF(); }
 
 // ── WhatsApp Integration ──────────────────────────────────────
+const WA_DEFAULT_COUNTRY_CODE = '91';
 let waConnected = localStorage.getItem('chaturthi_wa_connected') === '1';
 
 function waSetConnected(connected) {
@@ -2637,7 +2638,7 @@ async function waCheckStatus() {
     statusText.textContent = 'Connected';
     statusText.style.color = 'var(--green)';
     connInfo.style.display = 'block';
-    document.getElementById('wa-phone-display').textContent = 'WhatsApp Web Ready';
+    document.getElementById('wa-phone-display').textContent = `In-app mode (+${WA_DEFAULT_COUNTRY_CODE} default)`;
     connectBtn.style.display = 'none';
     disconnectBtn.style.display = '';
     sendBtn.disabled = false;
@@ -2694,10 +2695,10 @@ async function sendBillViaWhatsApp() {
 
   const digits = phone.replace(/\D/g,'');
   if (digits.length < 10) {
-    showToast('Please enter a valid phone number with at least 10 digits', '⚠️');
+    showToast('Please enter a valid phone number (at least 10 digits required)', '⚠️');
     return;
   }
-  const fullNumber = digits.length > 10 ? digits : `91${digits.slice(-10)}`;
+  const fullNumber = digits.length > 10 ? digits : `${WA_DEFAULT_COUNTRY_CODE}${digits.slice(-10)}`;
   const waUrl = `https://wa.me/${fullNumber}?text=${encodeURIComponent(textBill)}`;
   const win = window.open(waUrl, '_blank');
   if (!win) {
