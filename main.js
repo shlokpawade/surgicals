@@ -93,7 +93,7 @@ async function startWhatsApp() {
         try {
           await saveCreds();
         } catch (err) {
-          logWAError('Failed to persist WhatsApp session', err);
+          logWAError('Failed to persist WhatsApp session. User may need to re-authenticate next startup.', err);
         }
       });
       socket.ev.on('connection.update', async (update) => {
@@ -127,7 +127,7 @@ async function startWhatsApp() {
               connecting: !loggedOut,
               qr: '',
               phone: '',
-              error: loggedOut ? 'Logged out. Please reconnect by scanning QR again.' : 'Connection lost. Reconnecting...'
+              error: loggedOut ? 'Logged out. Please reconnect by scanning QR again.' : 'Connection lost. Attempting to reconnect...'
             });
             waSocket = undefined;
             waInitPromise = null;
@@ -149,7 +149,7 @@ async function startWhatsApp() {
         connecting: false,
         qr: '',
         phone: '',
-        error: 'WhatsApp initialization failed. Please restart connect.'
+        error: 'WhatsApp initialization failed. Please try connecting again.'
       });
       throw err;
     }
