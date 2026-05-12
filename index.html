@@ -1215,8 +1215,8 @@
                 <input type="text" class="form-input" id="bill-my-gst" placeholder="Enter your GST No." oninput="saveBillingBusinessInfo(); updatePreview()">
               </div>
               <div class="form-group">
-                <label class="form-label">Your Drug Lic. Number</label>
-                <input type="text" class="form-input" id="bill-my-drug-lic" placeholder="Enter your Drug Lic. No." oninput="saveBillingBusinessInfo(); updatePreview()">
+                <label class="form-label">Your Drug License Number</label>
+                <input type="text" class="form-input" id="bill-my-drug-lic" placeholder="Enter your Drug License No." oninput="saveBillingBusinessInfo(); updatePreview()">
               </div>
             </div>
 
@@ -2693,13 +2693,18 @@ async function sendBillViaWhatsApp() {
     `Thank you for your business! 🙏`;
 
   const digits = phone.replace(/\D/g,'');
-  const waUrl = `https://wa.me/91${digits.slice(-10)}?text=${encodeURIComponent(textBill)}`;
+  if (digits.length < 10) {
+    showToast('Please enter a valid phone number with at least 10 digits', '⚠️');
+    return;
+  }
+  const fullNumber = digits.length > 10 ? digits : `91${digits.slice(-10)}`;
+  const waUrl = `https://wa.me/${fullNumber}?text=${encodeURIComponent(textBill)}`;
   const win = window.open(waUrl, '_blank');
   if (!win) {
     showToast('Popup blocked. Please allow popups and try again.', '⚠️');
     return;
   }
-  showToast(`WhatsApp opened for ${digits.slice(-10)}. Press send in WhatsApp.`, '📲');
+  showToast(`WhatsApp opened for +${fullNumber}. Press send in WhatsApp.`, '📲');
   saveBillRecord();
 }
 
