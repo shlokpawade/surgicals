@@ -2705,14 +2705,14 @@ async function sendBillViaWhatsApp() {
     showToast(`Use 10 digits or ${WA_DEFAULT_COUNTRY_CODE} + 10 digits`, '⚠️');
     return;
   }
+  saveBillRecord();
   const waUrl = `https://wa.me/${fullNumber}?text=${encodeURIComponent(textBill)}`;
   const win = window.open(waUrl, '_blank');
   if (!win) {
-    showToast('Popup blocked. Please allow popups and try again.', '⚠️');
+    showToast('Popup blocked. Bill is saved; allow popups and try again.', '⚠️');
     return;
   }
   showToast(`WhatsApp opened for +${fullNumber}. Review and send in WhatsApp.`, '📲');
-  saveBillRecord();
 }
 
 // ── Override navigate to init billing page ───────────────────
