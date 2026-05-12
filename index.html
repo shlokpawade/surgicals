@@ -1368,7 +1368,7 @@
                 <label class="form-label">Gmail App Password</label>
                 <input type="password" class="form-input" id="gmail-app-password" placeholder="16-character app password" oninput="saveBillingCommInfo()">
               </div>
-              <div style="margin-top:8px;font-size:10px;color:var(--text3)">Use Gmail App Password (not your normal password). For security, this password is not saved.</div>
+              <div style="margin-top:8px;font-size:10px;color:var(--text3)">Use Gmail App Password (not your normal password); for security, this password is not saved.</div>
             </div>
             <div style="margin-top:10px">
               <button class="btn btn-whatsapp" style="width:100%;justify-content:center" id="wa-send-btn" onclick="sendBillToCustomer()" disabled>
@@ -2692,7 +2692,7 @@ function downloadBase64PDF(pdfBase64, fileName) {
 
 async function generateBillPdfPayload(data) {
   if (!window.electronAPI?.billGeneratePdf) {
-    throw new Error('PDF generation for sending is available in desktop app only.');
+    throw new Error('Use desktop app to generate and send bill PDF.');
   }
   const res = await window.electronAPI.billGeneratePdf({
     documentHTML: buildInvoiceDocumentHTML(data),
@@ -2708,7 +2708,7 @@ function buildBillSummaryText(data) {
   return `Bill ${data.no || ''}\nDate: ${fmtDate(data.date)}\nCustomer: ${data.custName}\nGrand Total: ₹${fmt(data.grand)}\nPlease find attached PDF bill.`;
 }
 
-function isValidEmail(email) {
+function hasBasicEmailFormat(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(email || '').trim());
 }
 
@@ -2915,13 +2915,13 @@ async function sendBillViaGmail() {
   }
   const data = getBillData();
   if (!data.custName) { showToast('Add customer name first','⚠️'); return; }
-  if (!isValidEmail(data.custEmail)) {
+  if (!hasBasicEmailFormat(data.custEmail)) {
     showToast('Please enter a valid customer email for Gmail sending', '⚠️');
     return;
   }
   const senderEmail = (document.getElementById('gmail-sender-email')?.value || '').trim();
   const appPassword = (document.getElementById('gmail-app-password')?.value || '').trim();
-  if (!isValidEmail(senderEmail) || !appPassword) {
+  if (!hasBasicEmailFormat(senderEmail) || !appPassword) {
     showToast('Add valid Gmail sender email and app password', '⚠️');
     return;
   }

@@ -107,7 +107,8 @@ async function generateBillPdfBuffer(documentHTML) {
     height: 1200,
     webPreferences: {
       nodeIntegration: false,
-      contextIsolation: true
+      contextIsolation: true,
+      javascript: false
     }
   });
 
@@ -416,7 +417,11 @@ ipcMain.handle('gmail:send-bill', async (_event, payload = {}) => {
       }
     });
 
-    await transporter.verify();
+    try {
+      await transporter.verify();
+    } catch (err) {
+      throw new Error('Gmail authentication failed. Check sender email and app password.');
+    }
 
     await transporter.sendMail({
       from: senderEmail,
@@ -435,6 +440,9 @@ ipcMain.handle('gmail:send-bill', async (_event, payload = {}) => {
     return { ok: true };
   } catch (err) {
     console.error('[Gmail] Failed to send bill', err);
+    if (String(err.message || '').includes('authentication failed')) {
+      throw err;
+    }
     throw new Error('Failed to send bill via Gmail. Check sender credentials and internet.');
   }
 });
