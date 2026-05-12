@@ -2790,8 +2790,8 @@ async function sendBillViaWhatsApp() {
     return;
   }
   try {
-    await window.electronAPI.whatsappSendBill({ phone: fullNumber, message: textBill });
     saveBillRecord();
+    await window.electronAPI.whatsappSendBill({ phone: fullNumber, message: textBill });
     showToast(`Bill sent to +${fullNumber} via WhatsApp`, '✅');
   } catch (err) {
     showToast(`Send failed: ${err.message || 'unknown error'}`, '⚠️');

@@ -79,7 +79,11 @@ async function startWhatsApp() {
         waSocket = undefined;
         waInitPromise = null;
         if (!loggedOut) {
-          setTimeout(() => startWhatsApp().catch(() => {}), 1500);
+          setTimeout(() => {
+            startWhatsApp().catch((err) => {
+              updateWAStatus({ connecting: false, error: `Reconnect failed: ${err.message || 'unknown error'}` });
+            });
+          }, 1500);
         }
       }
     });
@@ -91,7 +95,7 @@ async function clearAuthState() {
   try {
     fs.rmSync(authDir(), { recursive: true, force: true });
   } catch (err) {
-    // No-op: auth cleanup failures are non-fatal
+    updateWAStatus({ error: `Auth cleanup warning: ${err.message || 'unknown error'}` });
   }
 }
 
@@ -188,7 +192,7 @@ ipcMain.handle('whatsapp:disconnect', async () => {
       // Continue with local cleanup even if remote logout fails
     }
     try {
-      waSocket.end(new Error('Manual logout'));
+      waSocket.end(new Error('User initiated disconnect'));
     } catch (err) {
       // Ignore socket end errors
     }
@@ -201,6 +205,9 @@ ipcMain.handle('whatsapp:disconnect', async () => {
 });
 
 ipcMain.handle('whatsapp:send-bill', async (_event, payload = {}) => {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    throw new Error('Send payload must be an object with phone and message fields.');
+  }
   const phone = String(payload.phone || '').replace(/\D/g, '');
   const message = String(payload.message || '');
   if (!waStatus.connected || !waSocket) {
