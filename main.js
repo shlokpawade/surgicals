@@ -416,6 +416,8 @@ ipcMain.handle('gmail:send-bill', async (_event, payload = {}) => {
       }
     });
 
+    await transporter.verify();
+
     await transporter.sendMail({
       from: senderEmail,
       to: recipientEmail,
