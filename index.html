@@ -1210,6 +1210,14 @@
                   <option>Credit Note</option>
                 </select>
               </div>
+              <div class="form-group">
+                <label class="form-label">Your GST Number</label>
+                <input type="text" class="form-input" id="bill-my-gst" placeholder="Enter your GST No." oninput="saveBillingBusinessInfo(); updatePreview()">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Your Drug Lic. Number</label>
+                <input type="text" class="form-input" id="bill-my-drug-lic" placeholder="Enter your Drug Lic. No." oninput="saveBillingBusinessInfo(); updatePreview()">
+              </div>
             </div>
 
             <!-- Customer Details -->
@@ -2245,6 +2253,11 @@ function saveBills() {
   localStorage.setItem('chaturthi_bills', JSON.stringify(savedBills));
 }
 
+function saveBillingBusinessInfo() {
+  localStorage.setItem('chaturthi_bill_my_gst', document.getElementById('bill-my-gst')?.value || '');
+  localStorage.setItem('chaturthi_bill_my_drug_lic', document.getElementById('bill-my-drug-lic')?.value || '');
+}
+
 function initBillingPage() {
   // Set defaults
   document.getElementById('bill-date').value = today();
@@ -2255,6 +2268,8 @@ function initBillingPage() {
   const yr = new Date().getFullYear();
   const mo = String(new Date().getMonth()+1).padStart(2,'0');
   document.getElementById('bill-no').value = `CS-${yr}${mo}-${String(billCounter).padStart(3,'0')}`;
+  document.getElementById('bill-my-gst').value = localStorage.getItem('chaturthi_bill_my_gst') || '';
+  document.getElementById('bill-my-drug-lic').value = localStorage.getItem('chaturthi_bill_my_drug_lic') || '';
 
   // Populate party datalist
   const dl = document.getElementById('bill-party-list');
@@ -2364,6 +2379,8 @@ function getBillData() {
     custAddress: document.getElementById('bill-cust-address')?.value || '',
     custGst: document.getElementById('bill-cust-gst')?.value || '',
     custCity: document.getElementById('bill-cust-city')?.value || '',
+    myGst: document.getElementById('bill-my-gst')?.value || '',
+    myDrugLic: document.getElementById('bill-my-drug-lic')?.value || '',
     terms: document.getElementById('bill-terms')?.value || '',
     paymode: document.getElementById('bill-paymode')?.value || '',
     notes: document.getElementById('bill-notes')?.value || '',
@@ -2387,7 +2404,7 @@ function numberToWords(n) {
 }
 
 function buildInvoiceHTML(data, forPrint=false) {
-  const { no, date, due, type, custName, custContact, custPhone, custAddress, custGst, custCity,
+  const { no, date, due, type, custName, custContact, custPhone, custAddress, custGst, custCity, myGst, myDrugLic,
           terms, paymode, notes, items, subtotal, totalGst, discount, shipping, grand } = data;
   const itemRows = items.map((item, i) => {
     const base = item.qty * item.rate;
@@ -2414,7 +2431,7 @@ function buildInvoiceHTML(data, forPrint=false) {
           <div class="inv-company">⚕ Chaturthi Surgicals</div>
           <div class="inv-tagline">Wholesale Surgical Instruments & Medical Supplies</div>
           <div style="font-size:10px;opacity:0.7;margin-top:6px;line-height:1.5">
-            GSTIN: &nbsp; | &nbsp; Drug Lic. No.: &nbsp; | &nbsp; Palghar, Maharashtra
+            GSTIN: ${myGst||'—'} &nbsp; | &nbsp; Drug Lic. No.: ${myDrugLic||'—'} &nbsp; | &nbsp; Palghar, Maharashtra
           </div>
         </div>
         <div style="text-align:right">
@@ -2597,23 +2614,14 @@ function downloadBillPDF() {
 function printBill() { downloadBillPDF(); }
 
 // ── WhatsApp Integration ──────────────────────────────────────
-const WA_PORT = 9847;
-const WA_BASE = `http://127.0.0.1:${WA_PORT}`;
-let waPolling = null;
+let waConnected = localStorage.getItem('chaturthi_wa_connected') === '1';
 
-async function waAPI(path, method='GET', body=null) {
-  try {
-    const opts = { method, headers:{'Content-Type':'application/json'} };
-    if (body) opts.body = JSON.stringify(body);
-    const res = await fetch(WA_BASE + path, opts);
-    return await res.json();
-  } catch(e) {
-    return { ok: false, error: 'Server not running. Please restart the app.' };
-  }
+function waSetConnected(connected) {
+  waConnected = connected;
+  localStorage.setItem('chaturthi_wa_connected', connected ? '1' : '0');
 }
 
 async function waCheckStatus() {
-  const data = await waAPI('/status');
   const dot = document.getElementById('wa-dot');
   const statusText = document.getElementById('wa-status-text');
   const qrSection = document.getElementById('wa-qr-section');
@@ -2622,31 +2630,21 @@ async function waCheckStatus() {
   const disconnectBtn = document.getElementById('wa-disconnect-btn');
   const sendBtn = document.getElementById('wa-send-btn');
   if (!dot) return;
+  qrSection.style.display = 'none';
 
-  if (data.status === 'connected') {
+  if (waConnected) {
     dot.className = 'wa-status-dot connected';
     statusText.textContent = 'Connected';
     statusText.style.color = 'var(--green)';
-    qrSection.style.display = 'none';
     connInfo.style.display = 'block';
-    document.getElementById('wa-phone-display').textContent = '+' + (data.phone||'Unknown');
+    document.getElementById('wa-phone-display').textContent = 'WhatsApp Web Ready';
     connectBtn.style.display = 'none';
     disconnectBtn.style.display = '';
     sendBtn.disabled = false;
-    clearInterval(waPolling);
-  } else if (data.status === 'qr') {
-    dot.className = 'wa-status-dot qr';
-    statusText.textContent = 'Scan QR Code';
-    statusText.style.color = 'var(--sell)';
-    qrSection.style.display = 'block';
-    if (data.qr) document.getElementById('wa-qr-img').src = data.qr;
-    connInfo.style.display = 'none';
-    sendBtn.disabled = true;
   } else {
     dot.className = 'wa-status-dot disconnected';
     statusText.textContent = 'Disconnected';
     statusText.style.color = 'var(--text3)';
-    qrSection.style.display = 'none';
     connInfo.style.display = 'none';
     connectBtn.style.display = '';
     disconnectBtn.style.display = 'none';
@@ -2655,21 +2653,14 @@ async function waCheckStatus() {
 }
 
 async function waConnect() {
-  showToast('Connecting to WhatsApp...', '📱');
-  const res = await waAPI('/connect', 'POST');
-  if (res.ok) {
-    clearInterval(waPolling);
-    waPolling = setInterval(waCheckStatus, 2000);
-    showToast('Scan the QR code with your phone', '📷');
-  } else {
-    showToast('Error: ' + (res.error || 'Could not connect'), '❌');
-  }
+  waSetConnected(true);
+  waCheckStatus();
+  showToast('WhatsApp setup done in app. You can send now.', '✅');
 }
 
 async function waDisconnect() {
-  if (!confirm('Logout from WhatsApp? You will need to scan QR again.')) return;
-  await waAPI('/disconnect', 'POST');
-  clearInterval(waPolling);
+  if (!confirm('Disconnect WhatsApp from billing? You can reconnect anytime.')) return;
+  waSetConnected(false);
   waCheckStatus();
   showToast('WhatsApp logged out', '📵');
 }
@@ -2701,13 +2692,15 @@ async function sendBillViaWhatsApp() {
     `Payment: ${data.paymode} | Terms: ${data.terms}\n` +
     `Thank you for your business! 🙏`;
 
-  const res = await waAPI('/send-text', 'POST', { phone, message: textBill });
-  if (res.ok) {
-    showToast(`Bill sent to ${phone} via WhatsApp! ✅`, '📲');
-    saveBillRecord();
-  } else {
-    showToast('Failed: ' + (res.error||'Unknown error'), '❌');
+  const digits = phone.replace(/\D/g,'');
+  const waUrl = `https://wa.me/91${digits.slice(-10)}?text=${encodeURIComponent(textBill)}`;
+  const win = window.open(waUrl, '_blank');
+  if (!win) {
+    showToast('Popup blocked. Please allow popups and try again.', '⚠️');
+    return;
   }
+  showToast(`WhatsApp opened for ${digits.slice(-10)}. Press send in WhatsApp.`, '📲');
+  saveBillRecord();
 }
 
 // ── Override navigate to init billing page ───────────────────
