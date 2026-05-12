@@ -95,6 +95,7 @@ async function startWhatsApp() {
           await saveCreds();
         } catch (err) {
           logWAError('Failed to persist WhatsApp session. User may need to re-authenticate next startup.', err);
+          updateWAStatus({ error: 'Session save failed. You may need to rescan QR after restart.' });
         }
       });
       socket.ev.on('connection.update', async (update) => {
@@ -128,7 +129,7 @@ async function startWhatsApp() {
               connecting: !loggedOut,
               qr: '',
               phone: '',
-              error: loggedOut ? 'Logged out. Please reconnect by scanning QR again.' : 'Connection lost. Attempting to reconnect...'
+              error: loggedOut ? 'Logged out. Please reconnect by scanning QR again.' : ''
             });
             waSocket = undefined;
             waInitPromise = null;
@@ -252,7 +253,7 @@ ipcMain.handle('whatsapp:connect', async () => {
     return waStatus;
   } catch (err) {
     logWAError('Connect request failed', err);
-    throw new Error('Unable to connect WhatsApp right now. Please try again.');
+    throw new Error(`Unable to connect WhatsApp right now. ${err.message || 'Please try again.'}`);
   }
 });
 
