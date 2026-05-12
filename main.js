@@ -63,6 +63,7 @@ function clearReconnectTimer() {
 function scheduleReconnect() {
   clearReconnectTimer();
   reconnectTimer = setTimeout(() => {
+    reconnectTimer = null;
     startWhatsApp().catch((err) => {
       logWAError('Reconnect failed', err);
       updateWAStatus({ connecting: false, error: 'Reconnect failed. Please try connecting again.' });
@@ -136,7 +137,7 @@ async function startWhatsApp() {
             }
           }
         } catch (err) {
-          logWAError('Unhandled connection update error', err);
+          logWAError('Error processing WhatsApp connection update', err);
           updateWAStatus({ error: 'WhatsApp connection update failed. Please reconnect.' });
         }
       });
