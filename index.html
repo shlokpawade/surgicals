@@ -1331,7 +1331,7 @@
                 WhatsApp <span id="wa-status-text" style="color:var(--text3)">Disconnected</span>
               </div>
               <div style="display:flex;gap:6px">
-                <button class="btn btn-secondary" style="padding:4px 10px;font-size:11px" id="wa-connect-btn" onclick="waConnect()">Connect</button>
+                <button class="btn btn-secondary" style="padding:4px 10px;font-size:11px" id="wa-connect-btn" onclick="waConnect()">Connect WhatsApp</button>
                 <button class="btn btn-danger" style="padding:4px 10px;font-size:11px;display:none" id="wa-disconnect-btn" onclick="waDisconnect()">Logout</button>
               </div>
             </div>
@@ -1342,6 +1342,7 @@
             <div id="wa-connected-info" style="display:none;font-size:11px;color:var(--green)">
               ✅ Connected as: <span id="wa-phone-display"></span>
             </div>
+            <div style="margin-top:6px;font-size:10px;color:var(--text3)">Provider: <b>Baileys</b> • Enabled: <b>ON</b></div>
             <div style="margin-top:10px">
               <button class="btn btn-whatsapp" style="width:100%;justify-content:center" id="wa-send-btn" onclick="sendBillViaWhatsApp()" disabled>
                 📲 Send Bill via WhatsApp
@@ -2615,37 +2616,95 @@ function printBill() { downloadBillPDF(); }
 
 // ── WhatsApp Integration ──────────────────────────────────────
 const WA_DEFAULT_COUNTRY_CODE = '91';
-let waConnected = localStorage.getItem('chaturthi_wa_connected') === '1';
+let waStatus = {
+  connected: false,
+  connecting: false,
+  qr: '',
+  phone: '',
+  provider: 'baileys',
+  enabled: true
+};
 
-function waSetConnected(connected) {
-  waConnected = connected;
-  localStorage.setItem('chaturthi_wa_connected', connected ? '1' : '0');
+function isElectronWhatsAppAvailable() {
+  return !!window.electronAPI?.whatsappGetStatus;
+}
+
+function waApplyStatus(next = {}) {
+  waStatus = { ...waStatus, ...next };
 }
 
 async function waCheckStatus() {
   const dot = document.getElementById('wa-dot');
   const statusText = document.getElementById('wa-status-text');
   const qrSection = document.getElementById('wa-qr-section');
+  const qrImg = document.getElementById('wa-qr-img');
   const connInfo = document.getElementById('wa-connected-info');
+  const phoneDisplay = document.getElementById('wa-phone-display');
   const connectBtn = document.getElementById('wa-connect-btn');
   const disconnectBtn = document.getElementById('wa-disconnect-btn');
   const sendBtn = document.getElementById('wa-send-btn');
   if (!dot) return;
-  qrSection.style.display = 'none';
+  if (!isElectronWhatsAppAvailable()) {
+    dot.className = 'wa-status-dot disconnected';
+    statusText.textContent = 'Desktop app only';
+    statusText.style.color = 'var(--warn)';
+    qrSection.style.display = 'none';
+    connInfo.style.display = 'none';
+    connectBtn.style.display = '';
+    connectBtn.disabled = true;
+    connectBtn.textContent = 'Open Desktop App';
+    disconnectBtn.style.display = 'none';
+    sendBtn.disabled = true;
+    return;
+  }
 
-  if (waConnected) {
+  try {
+    const latestStatus = await window.electronAPI.whatsappGetStatus();
+    waApplyStatus(latestStatus || {});
+  } catch (err) {
+    waApplyStatus({ connected: false, connecting: false, qr: '' });
+  }
+
+  connectBtn.disabled = false;
+  connectBtn.textContent = 'Connect WhatsApp';
+
+  if (waStatus.connected) {
     dot.className = 'wa-status-dot connected';
     statusText.textContent = 'Connected';
     statusText.style.color = 'var(--green)';
+    qrSection.style.display = 'none';
+    qrImg.src = '';
     connInfo.style.display = 'block';
-    document.getElementById('wa-phone-display').textContent = `In-app mode (+${WA_DEFAULT_COUNTRY_CODE} default)`;
+    phoneDisplay.textContent = waStatus.phone ? `+${waStatus.phone}` : '(number not available)';
     connectBtn.style.display = 'none';
     disconnectBtn.style.display = '';
     sendBtn.disabled = false;
+  } else if (waStatus.qr) {
+    dot.className = 'wa-status-dot qr';
+    statusText.textContent = 'Scan QR in app';
+    statusText.style.color = 'var(--sell)';
+    qrSection.style.display = 'block';
+    qrImg.src = waStatus.qr;
+    connInfo.style.display = 'none';
+    connectBtn.style.display = '';
+    disconnectBtn.style.display = 'none';
+    sendBtn.disabled = true;
+  } else if (waStatus.connecting) {
+    dot.className = 'wa-status-dot qr';
+    statusText.textContent = 'Connecting...';
+    statusText.style.color = 'var(--sell)';
+    qrSection.style.display = 'none';
+    qrImg.src = '';
+    connInfo.style.display = 'none';
+    connectBtn.style.display = '';
+    disconnectBtn.style.display = 'none';
+    sendBtn.disabled = true;
   } else {
     dot.className = 'wa-status-dot disconnected';
     statusText.textContent = 'Disconnected';
     statusText.style.color = 'var(--text3)';
+    qrSection.style.display = 'none';
+    qrImg.src = '';
     connInfo.style.display = 'none';
     connectBtn.style.display = '';
     disconnectBtn.style.display = 'none';
@@ -2654,19 +2713,40 @@ async function waCheckStatus() {
 }
 
 async function waConnect() {
-  waSetConnected(true);
-  waCheckStatus();
-  showToast('WhatsApp setup done in app. You can send now.', '✅');
+  if (!isElectronWhatsAppAvailable()) {
+    showToast('Use desktop app to connect WhatsApp with in-app QR', '⚠️');
+    return;
+  }
+  try {
+    waApplyStatus({ connecting: true, qr: '' });
+    await waCheckStatus();
+    await window.electronAPI.whatsappConnect();
+    showToast('Open WhatsApp linked devices and scan QR shown in app.', '📱');
+    await waCheckStatus();
+  } catch (err) {
+    showToast(`WhatsApp connect failed: ${err.message || 'unknown error'}`, '⚠️');
+    await waCheckStatus();
+  }
 }
 
 async function waDisconnect() {
   if (!confirm('Disconnect WhatsApp from billing? You can reconnect anytime.')) return;
-  waSetConnected(false);
-  waCheckStatus();
-  showToast('WhatsApp logged out', '📵');
+  if (!isElectronWhatsAppAvailable()) return;
+  try {
+    await window.electronAPI.whatsappDisconnect();
+    waApplyStatus({ connected: false, connecting: false, qr: '', phone: '' });
+    await waCheckStatus();
+    showToast('WhatsApp logged out', '📵');
+  } catch (err) {
+    showToast(`Logout failed: ${err.message || 'unknown error'}`, '⚠️');
+  }
 }
 
 async function sendBillViaWhatsApp() {
+  if (!isElectronWhatsAppAvailable()) {
+    showToast('Use desktop app to send via WhatsApp', '⚠️');
+    return;
+  }
   const data = getBillData();
   if (!data.custName) { showToast('Add customer name first','⚠️'); return; }
   const phone = data.custPhone;
@@ -2705,14 +2785,24 @@ async function sendBillViaWhatsApp() {
     showToast(`Use 10 digits or ${WA_DEFAULT_COUNTRY_CODE} + 10 digits`, '⚠️');
     return;
   }
-  saveBillRecord();
-  const waUrl = `https://wa.me/${fullNumber}?text=${encodeURIComponent(textBill)}`;
-  const win = window.open(waUrl, '_blank');
-  if (!win) {
-    showToast('Popup blocked. Bill is saved; allow popups and try again.', '⚠️');
+  if (!waStatus.connected) {
+    showToast('Connect WhatsApp first and wait for Connected status', '⚠️');
     return;
   }
-  showToast(`WhatsApp opened for +${fullNumber}. Review and send in WhatsApp.`, '📲');
+  try {
+    saveBillRecord();
+    await window.electronAPI.whatsappSendBill({ phone: fullNumber, message: textBill });
+    showToast(`Bill sent to +${fullNumber} via WhatsApp`, '✅');
+  } catch (err) {
+    showToast(`Send failed: ${err.message || 'unknown error'}`, '⚠️');
+  }
+}
+
+if (window.electronAPI?.onWhatsAppStatus) {
+  window.electronAPI.onWhatsAppStatus((status) => {
+    waApplyStatus(status || {});
+    waCheckStatus();
+  });
 }
 
 // ── Override navigate to init billing page ───────────────────
