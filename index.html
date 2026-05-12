@@ -1211,11 +1211,11 @@
                 </select>
               </div>
               <div class="form-group">
-                <label class="form-label">Your GST Number</label>
+                <label class="form-label" for="bill-my-gst">Your GST Number</label>
                 <input type="text" class="form-input" id="bill-my-gst" placeholder="Enter your GST Number" oninput="saveBillingBusinessInfo(); updatePreview()">
               </div>
               <div class="form-group">
-                <label class="form-label">Your Drug License Number</label>
+                <label class="form-label" for="bill-my-drug-lic">Your Drug License Number</label>
                 <input type="text" class="form-input" id="bill-my-drug-lic" placeholder="Enter your Drug License Number" oninput="saveBillingBusinessInfo(); updatePreview()">
               </div>
             </div>
@@ -2695,7 +2695,7 @@ async function sendBillViaWhatsApp() {
 
   const digits = phone.replace(/\D/g,'');
   if (digits.length < 10) {
-    showToast('Please enter a valid phone number (10 digits required)', '⚠️');
+    showToast('Use India number: 10 digits or 91 + 10 digits', '⚠️');
     return;
   }
   let fullNumber = '';
