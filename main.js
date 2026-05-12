@@ -8,6 +8,7 @@ let waSocket;
 let waInitPromise = null;
 let baileysModulePromise = null;
 let reconnectTimer = null;
+const WA_RECONNECT_DELAY_MS = 1500;
 const waStatus = {
   connected: false,
   connecting: false,
@@ -34,6 +35,10 @@ function updateWAStatus(nextState) {
 
 function logWAError(context, error) {
   console.error(`[WhatsApp] ${context}`, error);
+}
+
+function logWAInfo(message) {
+  console.log(`[WhatsApp] ${message}`);
 }
 
 async function loadBaileys() {
@@ -68,7 +73,7 @@ function scheduleReconnect() {
       logWAError('Reconnect failed', err);
       updateWAStatus({ connecting: false, error: 'Reconnect failed. Please try connecting again.' });
     });
-  }, 1500);
+  }, WA_RECONNECT_DELAY_MS);
 }
 
 function parseDisconnectCode(lastDisconnect) {
@@ -94,7 +99,7 @@ async function startWhatsApp() {
         try {
           await saveCreds();
         } catch (err) {
-          logWAError('Failed to persist WhatsApp session. User may need to re-authenticate next startup.', err);
+          logWAError('Failed to persist WhatsApp session', err);
           updateWAStatus({ error: 'Session save failed. You may need to rescan QR after restart.' });
         }
       });
@@ -121,7 +126,9 @@ async function startWhatsApp() {
           if (connection === 'close') {
             const code = parseDisconnectCode(lastDisconnect);
             const loggedOut = code === DisconnectReason.loggedOut;
-            if (!loggedOut) {
+            if (loggedOut) {
+              logWAInfo(`Connection closed (code: ${code ?? 'unknown'}) after logout`);
+            } else {
               logWAError(`Connection closed (code: ${code ?? 'unknown'})`, lastDisconnect?.error);
             }
             updateWAStatus({
