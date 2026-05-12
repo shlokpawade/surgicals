@@ -1212,11 +1212,11 @@
               </div>
               <div class="form-group">
                 <label class="form-label">Your GST Number</label>
-                <input type="text" class="form-input" id="bill-my-gst" placeholder="Enter your GST No." oninput="saveBillingBusinessInfo(); updatePreview()">
+                <input type="text" class="form-input" id="bill-my-gst" placeholder="Enter your GST Number" oninput="saveBillingBusinessInfo(); updatePreview()">
               </div>
               <div class="form-group">
                 <label class="form-label">Your Drug License Number</label>
-                <input type="text" class="form-input" id="bill-my-drug-lic" placeholder="Enter your Drug License No." oninput="saveBillingBusinessInfo(); updatePreview()">
+                <input type="text" class="form-input" id="bill-my-drug-lic" placeholder="Enter your Drug License Number" oninput="saveBillingBusinessInfo(); updatePreview()">
               </div>
             </div>
 
@@ -2695,17 +2695,23 @@ async function sendBillViaWhatsApp() {
 
   const digits = phone.replace(/\D/g,'');
   if (digits.length < 10) {
-    showToast('Please enter a valid phone number (at least 10 digits required)', '⚠️');
+    showToast('Please enter a valid phone number (10 digits required)', '⚠️');
     return;
   }
-  const fullNumber = digits.length > 10 ? digits : `${WA_DEFAULT_COUNTRY_CODE}${digits.slice(-10)}`;
+  let fullNumber = '';
+  if (digits.length === 10) fullNumber = `${WA_DEFAULT_COUNTRY_CODE}${digits}`;
+  else if (digits.length === 12 && digits.startsWith(WA_DEFAULT_COUNTRY_CODE)) fullNumber = digits;
+  else {
+    showToast(`Use 10 digits or ${WA_DEFAULT_COUNTRY_CODE} + 10 digits`, '⚠️');
+    return;
+  }
   const waUrl = `https://wa.me/${fullNumber}?text=${encodeURIComponent(textBill)}`;
   const win = window.open(waUrl, '_blank');
   if (!win) {
     showToast('Popup blocked. Please allow popups and try again.', '⚠️');
     return;
   }
-  showToast(`WhatsApp opened for +${fullNumber}. Press send in WhatsApp.`, '📲');
+  showToast(`WhatsApp opened for +${fullNumber}. Review and send in WhatsApp.`, '📲');
   saveBillRecord();
 }
 
