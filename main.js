@@ -8,6 +8,7 @@ let waSocket;
 let waInitPromise = null;
 let baileysModulePromise = null;
 let reconnectTimer = null;
+let disconnectRequested = false;
 const WA_RECONNECT_DELAY_MS = 1500;
 const waStatus = {
   connected: false,
@@ -69,6 +70,7 @@ function scheduleReconnect() {
   clearReconnectTimer();
   reconnectTimer = setTimeout(() => {
     reconnectTimer = null;
+    if (disconnectRequested) return;
     startWhatsApp().catch((err) => {
       logWAError('Reconnect failed', err);
       updateWAStatus({ connecting: false, error: 'Reconnect failed. Please try connecting again.' });
@@ -83,11 +85,15 @@ function parseDisconnectCode(lastDisconnect) {
 
 async function startWhatsApp() {
   if (waInitPromise) return waInitPromise;
+  disconnectRequested = false;
   waInitPromise = (async () => {
     updateWAStatus({ connecting: true, error: '', qr: '', connected: false, phone: '' });
     try {
       const { makeWASocket, DisconnectReason, useMultiFileAuthState } = await loadBaileys();
       const { state, saveCreds } = await useMultiFileAuthState(authDir());
+      if (disconnectRequested) {
+        throw new Error('WhatsApp connection cancelled.');
+      }
       const socket = makeWASocket({
         auth: state,
         printQRInTerminal: false,
@@ -97,7 +103,10 @@ async function startWhatsApp() {
 
       socket.ev.on('creds.update', async () => {
         try {
-          await saveCreds();
+          const saveResult = saveCreds();
+          if (saveResult && typeof saveResult.then === 'function') {
+            await saveResult;
+          }
         } catch (err) {
           logWAError('Failed to persist WhatsApp session', err);
           updateWAStatus({ error: 'Session save failed. You may need to rescan QR after restart.' });
@@ -140,7 +149,7 @@ async function startWhatsApp() {
             });
             waSocket = undefined;
             waInitPromise = null;
-            if (!loggedOut) {
+            if (!loggedOut && !disconnectRequested) {
               scheduleReconnect();
             }
           }
@@ -265,6 +274,7 @@ ipcMain.handle('whatsapp:connect', async () => {
 });
 
 ipcMain.handle('whatsapp:disconnect', async () => {
+  disconnectRequested = true;
   clearReconnectTimer();
   if (waSocket) {
     try {
