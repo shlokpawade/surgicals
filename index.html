@@ -1368,7 +1368,7 @@
                 <label class="form-label">Gmail App Password</label>
                 <input type="password" class="form-input" id="gmail-app-password" placeholder="16-character app password" oninput="saveBillingCommInfo()">
               </div>
-              <div style="margin-top:8px;font-size:10px;color:var(--text3)">Use Gmail App Password (not your normal password).</div>
+              <div style="margin-top:8px;font-size:10px;color:var(--text3)">Use Gmail App Password (not your normal password). For security, this password is not saved.</div>
             </div>
             <div style="margin-top:10px">
               <button class="btn btn-whatsapp" style="width:100%;justify-content:center" id="wa-send-btn" onclick="sendBillToCustomer()" disabled>
@@ -2291,7 +2291,6 @@ function saveBillingBusinessInfo() {
 function saveBillingCommInfo() {
   localStorage.setItem('chaturthi_bill_send_channel', document.getElementById('bill-send-channel')?.value || BILL_CHANNEL_WHATSAPP);
   localStorage.setItem('chaturthi_bill_gmail_sender', document.getElementById('gmail-sender-email')?.value || '');
-  localStorage.setItem('chaturthi_bill_gmail_app_password', document.getElementById('gmail-app-password')?.value || '');
 }
 
 function getSelectedBillSendChannel() {
@@ -2333,7 +2332,7 @@ function initBillingPage() {
   document.getElementById('bill-my-drug-lic').value = localStorage.getItem('chaturthi_bill_my_drug_lic') || '';
   document.getElementById('bill-send-channel').value = localStorage.getItem('chaturthi_bill_send_channel') || BILL_CHANNEL_WHATSAPP;
   document.getElementById('gmail-sender-email').value = localStorage.getItem('chaturthi_bill_gmail_sender') || '';
-  document.getElementById('gmail-app-password').value = localStorage.getItem('chaturthi_bill_gmail_app_password') || '';
+  document.getElementById('gmail-app-password').value = '';
 
   // Populate party datalist
   const dl = document.getElementById('bill-party-list');
