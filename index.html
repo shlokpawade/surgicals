@@ -1,0 +1,2750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chaturthi Surgicals — Business Management System</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap');
+
+  :root {
+    --bg: #0a0e1a;
+    --surface: #111827;
+    --surface2: #1a2236;
+    --surface3: #1f2d44;
+    --border: #243047;
+    --accent: #00d4aa;
+    --accent2: #0099ff;
+    --accent3: #f59e0b;
+    --red: #ef4444;
+    --green: #10b981;
+    --text: #e8edf5;
+    --text2: #8899b5;
+    --text3: #5a6a85;
+    --buy: #00d4aa;
+    --sell: #f59e0b;
+    --shadow: 0 4px 24px rgba(0,0,0,0.4);
+    --radius: 12px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  /* TITLE BAR */
+  .titlebar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    height: 52px;
+    flex-shrink: 0;
+    -webkit-app-region: drag;
+  }
+  .titlebar-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .logo-icon {
+    width: 32px; height: 32px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+  .logo-text {
+    font-family: 'Playfair Display', serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: 0.02em;
+  }
+  .logo-sub {
+    font-size: 10px;
+    color: var(--text3);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-top: 1px;
+  }
+  .titlebar-date {
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--text3);
+    -webkit-app-region: no-drag;
+  }
+
+  /* LAYOUT */
+  .app-body {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    width: 220px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    padding: 16px 0;
+  }
+  .nav-section {
+    padding: 0 12px;
+    margin-bottom: 4px;
+  }
+  .nav-label {
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text3);
+    padding: 0 10px;
+    margin-bottom: 6px;
+    margin-top: 16px;
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--text2);
+    transition: all 0.15s;
+  }
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item.active {
+    background: linear-gradient(135deg, rgba(0,212,170,0.15), rgba(0,153,255,0.08));
+    color: var(--accent);
+    font-weight: 500;
+    border: 1px solid rgba(0,212,170,0.2);
+  }
+  .nav-icon { font-size: 15px; width: 18px; text-align: center; }
+
+  .sidebar-footer {
+    margin-top: auto;
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+  }
+  .version-tag {
+    font-size: 10px;
+    color: var(--text3);
+  }
+
+  /* MAIN CONTENT */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .page { display: none; flex-direction: column; height: 100%; overflow: hidden; }
+  .page.active { display: flex; }
+
+  /* PAGE HEADER */
+  .page-header {
+    padding: 20px 28px 0;
+    flex-shrink: 0;
+  }
+  .page-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .page-sub { font-size: 12px; color: var(--text3); margin-top: 2px; }
+
+  /* DASHBOARD */
+  .dash-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    padding: 20px 28px;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+    position: relative;
+    overflow: hidden;
+  }
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+  .stat-card.c1::before { background: linear-gradient(90deg, var(--accent), transparent); }
+  .stat-card.c2::before { background: linear-gradient(90deg, var(--accent2), transparent); }
+  .stat-card.c3::before { background: linear-gradient(90deg, var(--sell), transparent); }
+  .stat-card.c4::before { background: linear-gradient(90deg, var(--green), transparent); }
+  .stat-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text3); margin-bottom: 8px; }
+  .stat-value { font-size: 26px; font-weight: 600; color: var(--text); line-height: 1; }
+  .stat-value span { font-size: 13px; color: var(--text3); font-weight: 400; }
+  .stat-sub { font-size: 11px; color: var(--text3); margin-top: 6px; }
+  .stat-icon { position: absolute; right: 16px; top: 16px; font-size: 22px; opacity: 0.15; }
+
+  .dash-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    padding: 0 28px 20px;
+    flex: 1;
+    overflow: hidden;
+    min-height: 0;
+  }
+  .dash-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .panel-header {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .panel-title { font-size: 12px; font-weight: 500; color: var(--text); letter-spacing: 0.02em; }
+  .panel-body { flex: 1; overflow-y: auto; padding: 8px 0; }
+
+  .mini-row {
+    display: flex;
+    align-items: center;
+    padding: 8px 16px;
+    gap: 10px;
+    border-bottom: 1px solid rgba(36,48,71,0.5);
+    transition: background 0.1s;
+  }
+  .mini-row:hover { background: var(--surface2); }
+  .mini-badge {
+    font-size: 9px;
+    font-weight: 600;
+    padding: 3px 7px;
+    border-radius: 4px;
+    letter-spacing: 0.05em;
+    flex-shrink: 0;
+  }
+  .badge-buy { background: rgba(0,212,170,0.15); color: var(--buy); }
+  .badge-sell { background: rgba(245,158,11,0.15); color: var(--sell); }
+  .mini-info { flex: 1; min-width: 0; }
+  .mini-name { font-size: 12px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mini-detail { font-size: 10px; color: var(--text3); margin-top: 1px; }
+  .mini-amount { font-size: 12px; font-weight: 500; color: var(--text); flex-shrink: 0; }
+
+  /* TOOLBAR */
+  .toolbar {
+    padding: 14px 28px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .search-box {
+    flex: 1;
+    max-width: 320px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .search-box input {
+    background: none;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 13px;
+    width: 100%;
+  }
+  .search-box input::placeholder { color: var(--text3); }
+  .search-icon { color: var(--text3); font-size: 14px; }
+
+  .btn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: none;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), #00a884);
+    color: #0a0e1a;
+    font-weight: 600;
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(0,212,170,0.3); }
+  .btn-sell {
+    background: linear-gradient(135deg, var(--sell), #d97706);
+    color: #0a0e1a;
+    font-weight: 600;
+  }
+  .btn-sell:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(245,158,11,0.3); }
+  .btn-secondary {
+    background: var(--surface2);
+    color: var(--text2);
+    border: 1px solid var(--border);
+  }
+  .btn-secondary:hover { background: var(--surface3); color: var(--text); }
+  .btn-danger {
+    background: rgba(239,68,68,0.1);
+    color: var(--red);
+    border: 1px solid rgba(239,68,68,0.2);
+  }
+  .btn-danger:hover { background: rgba(239,68,68,0.2); }
+  .btn-icon { font-size: 15px; }
+
+  .filter-select {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 12px;
+    outline: none;
+    cursor: pointer;
+  }
+
+  /* TABLE */
+  .table-wrap {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 28px 20px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  thead th {
+    padding: 10px 14px;
+    text-align: left;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text3);
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+  tbody tr {
+    border-bottom: 1px solid rgba(36,48,71,0.5);
+    transition: background 0.1s;
+  }
+  tbody tr:hover { background: var(--surface2); }
+  tbody td {
+    padding: 11px 14px;
+    color: var(--text);
+    vertical-align: middle;
+  }
+  .td-secondary { color: var(--text2); font-size: 12px; }
+  .td-muted { color: var(--text3); font-size: 11px; }
+  .amount-cell { font-weight: 500; font-variant-numeric: tabular-nums; }
+  .profit-pos { color: var(--green); }
+  .profit-neg { color: var(--red); }
+
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+  .tag-buy { background: rgba(0,212,170,0.12); color: var(--buy); }
+  .tag-sell { background: rgba(245,158,11,0.12); color: var(--sell); }
+  .tag-low { background: rgba(239,68,68,0.12); color: var(--red); }
+  .tag-ok { background: rgba(16,185,129,0.12); color: var(--green); }
+
+  /* MODAL */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(4px);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    width: 560px;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.6);
+    animation: modalIn 0.2s ease;
+  }
+  @keyframes modalIn {
+    from { opacity: 0; transform: scale(0.96) translateY(8px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  .modal-header {
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .modal-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 17px;
+    font-weight: 600;
+  }
+  .modal-title.buy { color: var(--buy); }
+  .modal-title.sell { color: var(--sell); }
+  .modal-close {
+    width: 28px; height: 28px;
+    background: var(--surface2);
+    border: none;
+    border-radius: 6px;
+    color: var(--text3);
+    cursor: pointer;
+    font-size: 14px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .modal-close:hover { color: var(--text); background: var(--surface3); }
+  .modal-body { padding: 20px 24px; }
+  .modal-footer {
+    padding: 14px 24px 20px;
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    border-top: 1px solid var(--border);
+  }
+
+  /* FORM */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-group.full { grid-column: 1 / -1; }
+  .form-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text3);
+  }
+  .form-input, .form-select, .form-textarea {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.15s;
+    user-select: text;
+  }
+  .form-input:focus, .form-select:focus, .form-textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(0,212,170,0.1);
+  }
+  .form-input.sell:focus { border-color: var(--sell); box-shadow: 0 0 0 2px rgba(245,158,11,0.1); }
+  .form-select option { background: var(--surface2); }
+  .form-textarea { resize: vertical; min-height: 60px; }
+  .calc-preview {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .calc-label { font-size: 11px; color: var(--text3); }
+  .calc-value { font-size: 18px; font-weight: 600; color: var(--accent); }
+  .calc-value.sell { color: var(--sell); }
+
+  /* INVENTORY */
+  .stock-bar-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .stock-bar {
+    flex: 1;
+    height: 4px;
+    background: var(--surface3);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .stock-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.3s;
+  }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--surface3); }
+
+  /* EMPTY STATE */
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text3);
+  }
+  .empty-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.3; }
+  .empty-text { font-size: 13px; }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 13px;
+    color: var(--text);
+    box-shadow: var(--shadow);
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all 0.25s;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast-icon { font-size: 16px; }
+
+  /* REPORT PAGE */
+  .report-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    padding: 20px 28px 0;
+  }
+  .report-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+  }
+  .report-card-title { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text3); margin-bottom: 8px; }
+  .report-card-value { font-size: 22px; font-weight: 600; }
+  .rg { color: var(--green); }
+  .rb { color: var(--accent2); }
+  .ry { color: var(--sell); }
+
+  /* EXPORT SECTION */
+  .export-box {
+    margin: 16px 28px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+  }
+  .export-title { font-size: 13px; font-weight: 500; margin-bottom: 14px; color: var(--text); }
+  .export-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+  /* Party page */
+  .party-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    padding: 16px 28px;
+    overflow-y: auto;
+    flex: 1;
+  }
+  .party-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .party-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .party-name { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+  .party-type { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text3); margin-bottom: 10px; }
+  .party-stats { display: flex; gap: 16px; }
+  .party-stat-val { font-size: 15px; font-weight: 600; }
+  .party-stat-label { font-size: 10px; color: var(--text3); }
+
+  .highlight-accent { color: var(--accent); }
+  .highlight-sell { color: var(--sell); }
+
+  /* ── BILLING PAGE ── */
+  .billing-layout {
+    display: grid;
+    grid-template-columns: 1fr 420px;
+    gap: 16px;
+    padding: 16px 28px 20px;
+    flex: 1;
+    overflow: hidden;
+    min-height: 0;
+  }
+  .bill-form-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .bill-preview-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow-y: auto;
+  }
+  .bill-items-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    margin-top: 8px;
+  }
+  .bill-items-table th {
+    padding: 7px 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text3);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    text-align: left;
+  }
+  .bill-items-table td {
+    padding: 7px 10px;
+    border: 1px solid var(--border);
+    color: var(--text);
+    vertical-align: middle;
+  }
+  .bill-items-table td input, .bill-items-table td select {
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 12px;
+    width: 100%;
+    user-select: text;
+  }
+  .bill-items-table tr:hover td { background: var(--surface2); }
+  .add-item-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+    align-items: center;
+  }
+
+  /* Bill preview (rendered invoice) */
+  .invoice-preview {
+    background: #fff;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+    font-family: 'Arial', sans-serif;
+    color: #1a1a1a;
+    font-size: 12px;
+  }
+  .inv-header {
+    background: linear-gradient(135deg, #0a3d2e, #0d5c45);
+    color: white;
+    padding: 20px 24px 16px;
+  }
+  .inv-company { font-size: 20px; font-weight: 700; letter-spacing: 0.02em; }
+  .inv-tagline { font-size: 10px; opacity: 0.7; margin-top: 2px; letter-spacing: 0.08em; text-transform: uppercase; }
+  .inv-meta { display: flex; justify-content: space-between; margin-top: 14px; }
+  .inv-meta-block { font-size: 11px; opacity: 0.85; line-height: 1.6; }
+  .inv-title { font-size: 13px; font-weight: 700; opacity: 1; letter-spacing: 0.05em; }
+  .inv-body { padding: 16px 20px; }
+  .inv-parties { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 14px; }
+  .inv-party-box { background: #f8fafb; border-radius: 6px; padding: 10px 12px; }
+  .inv-party-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: #666; margin-bottom: 4px; }
+  .inv-party-name { font-size: 13px; font-weight: 700; color: #1a1a1a; }
+  .inv-party-detail { font-size: 10px; color: #555; line-height: 1.5; margin-top: 2px; }
+  .inv-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  .inv-table th { background: #0a3d2e; color: white; padding: 7px 10px; text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; }
+  .inv-table td { padding: 7px 10px; border-bottom: 1px solid #e5e7eb; }
+  .inv-table tr:nth-child(even) td { background: #f8fafb; }
+  .inv-totals { margin-top: 12px; display: flex; justify-content: flex-end; }
+  .inv-totals-box { min-width: 200px; }
+  .inv-total-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 11px; color: #444; border-bottom: 1px solid #eee; }
+  .inv-total-row.grand { font-weight: 700; font-size: 14px; color: #0a3d2e; border-bottom: none; padding-top: 8px; }
+  .inv-footer { background: #f8fafb; border-top: 1px solid #e5e7eb; padding: 10px 20px; font-size: 9px; color: #888; text-align: center; }
+  .inv-stamp { display: inline-block; border: 2px solid #0a3d2e; color: #0a3d2e; padding: 4px 14px; border-radius: 4px; font-weight: 700; font-size: 10px; letter-spacing: 0.1em; transform: rotate(-8deg); opacity: 0.6; margin-top: 8px; }
+
+  /* WhatsApp panel */
+  .wa-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+  }
+  .wa-status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 6px;
+  }
+  .wa-status-dot.connected { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .wa-status-dot.disconnected { background: var(--text3); }
+  .wa-status-dot.qr { background: var(--sell); box-shadow: 0 0 6px var(--sell); }
+  .wa-qr-wrap {
+    text-align: center;
+    padding: 12px 0;
+  }
+  .wa-qr-wrap img {
+    width: 180px; height: 180px;
+    border-radius: 8px;
+    border: 3px solid var(--accent);
+  }
+  .bill-action-btns {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .btn-whatsapp {
+    background: linear-gradient(135deg, #25d366, #128c7e);
+    color: white;
+    font-weight: 600;
+  }
+  .btn-whatsapp:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(37,211,102,0.35); }
+  .btn-whatsapp:disabled { opacity: 0.45; transform: none; cursor: not-allowed; }
+
+  /* Bill history */
+  .bill-history-row {
+    display: flex;
+    align-items: center;
+    padding: 9px 14px;
+    border-bottom: 1px solid rgba(36,48,71,0.5);
+    gap: 10px;
+    transition: background 0.1s;
+  }
+  .bill-history-row:hover { background: var(--surface2); }
+</style>
+</head>
+<body>
+
+<!-- TITLE BAR -->
+<div class="titlebar">
+  <div class="titlebar-logo">
+    <div class="logo-icon">⚕</div>
+    <div>
+      <div class="logo-text">Chaturthi Surgicals</div>
+      <div class="logo-sub">Business Management System</div>
+    </div>
+  </div>
+  <div class="titlebar-date" id="titleDate"></div>
+</div>
+
+<!-- APP BODY -->
+<div class="app-body">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="nav-section">
+      <div class="nav-label">Overview</div>
+      <div class="nav-item active" onclick="navigate('dashboard')">
+        <span class="nav-icon">📊</span> Dashboard
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Transactions</div>
+      <div class="nav-item" onclick="navigate('purchases')">
+        <span class="nav-icon">📥</span> Purchases
+      </div>
+      <div class="nav-item" onclick="navigate('sales')">
+        <span class="nav-icon">📤</span> Sales
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Management</div>
+      <div class="nav-item" onclick="navigate('inventory')">
+        <span class="nav-icon">🗄️</span> Inventory
+      </div>
+      <div class="nav-item" onclick="navigate('parties')">
+        <span class="nav-icon">🏢</span> Parties
+      </div>
+      <div class="nav-item" onclick="navigate('products')">
+        <span class="nav-icon">💊</span> Products
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Analytics</div>
+      <div class="nav-item" onclick="navigate('billing')">
+        <span class="nav-icon">🧾</span> Generate Bill
+      </div>
+      <div class="nav-item" onclick="navigate('reports')">
+        <span class="nav-icon">📈</span> Reports
+      </div>
+      <div class="nav-item" onclick="navigate('export')">
+        <span class="nav-icon">💾</span> Export Data
+      </div>
+    </div>
+    <div class="sidebar-footer">
+      <div class="version-tag">v1.1.0 · Chaturthi Surgicals</div>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="main">
+
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-header">
+        <div class="page-title">Dashboard</div>
+        <div class="page-sub">Business overview at a glance</div>
+      </div>
+      <div class="dash-grid">
+        <div class="stat-card c1">
+          <div class="stat-icon">📥</div>
+          <div class="stat-label">Total Purchased</div>
+          <div class="stat-value"><span>₹</span><span id="ds-totalBuy">0</span></div>
+          <div class="stat-sub" id="ds-buyCount">0 purchase transactions</div>
+        </div>
+        <div class="stat-card c2">
+          <div class="stat-icon">📤</div>
+          <div class="stat-label">Total Sold</div>
+          <div class="stat-value"><span>₹</span><span id="ds-totalSell">0</span></div>
+          <div class="stat-sub" id="ds-sellCount">0 sale transactions</div>
+        </div>
+        <div class="stat-card c3">
+          <div class="stat-icon">💰</div>
+          <div class="stat-label">Gross Profit</div>
+          <div class="stat-value" id="ds-profit">₹0</div>
+          <div class="stat-sub" id="ds-margin">Margin: 0%</div>
+        </div>
+        <div class="stat-card c4">
+          <div class="stat-icon">🗄️</div>
+          <div class="stat-label">Products Tracked</div>
+          <div class="stat-value" id="ds-products">0</div>
+          <div class="stat-sub" id="ds-lowStock">0 low stock alerts</div>
+        </div>
+      </div>
+      <div class="dash-row">
+        <div class="dash-panel">
+          <div class="panel-header">
+            <span class="panel-title">Recent Transactions</span>
+          </div>
+          <div class="panel-body" id="dash-recent"></div>
+        </div>
+        <div class="dash-panel">
+          <div class="panel-header">
+            <span class="panel-title">Low Stock Alerts</span>
+          </div>
+          <div class="panel-body" id="dash-lowstock"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PURCHASES PAGE -->
+    <div class="page" id="page-purchases">
+      <div class="page-header">
+        <div class="page-title">Purchases</div>
+        <div class="page-sub">Record items bought from suppliers & companies</div>
+      </div>
+      <div class="toolbar">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" placeholder="Search by product, supplier..." id="searchPurchase" oninput="renderPurchases()">
+        </div>
+        <select class="filter-select" id="filterPurchaseMonth" onchange="renderPurchases()">
+          <option value="">All Months</option>
+        </select>
+        <button class="btn btn-primary" onclick="openModal('buy')">
+          <span class="btn-icon">+</span> Record Purchase
+        </button>
+        <button class="btn btn-secondary" onclick="exportTableCSV('purchases')">
+          <span class="btn-icon">📄</span> Export
+        </button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Date</th>
+              <th>Product</th>
+              <th>Supplier / Company</th>
+              <th>Qty</th>
+              <th>Unit</th>
+              <th>Rate (₹)</th>
+              <th>Total (₹)</th>
+              <th>Invoice No.</th>
+              <th>Notes</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-purchases"></tbody>
+        </table>
+        <div class="empty-state" id="empty-purchases" style="display:none">
+          <div class="empty-icon">📥</div>
+          <div class="empty-text">No purchases recorded yet.<br>Click "Record Purchase" to add your first entry.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SALES PAGE -->
+    <div class="page" id="page-sales">
+      <div class="page-header">
+        <div class="page-title">Sales</div>
+        <div class="page-sub">Record items sold to hospitals & medical stores</div>
+      </div>
+      <div class="toolbar">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" placeholder="Search by product, customer..." id="searchSale" oninput="renderSales()">
+        </div>
+        <select class="filter-select" id="filterSaleMonth" onchange="renderSales()">
+          <option value="">All Months</option>
+        </select>
+        <button class="btn btn-sell" onclick="openModal('sell')">
+          <span class="btn-icon">+</span> Record Sale
+        </button>
+        <button class="btn btn-secondary" onclick="exportTableCSV('sales')">
+          <span class="btn-icon">📄</span> Export
+        </button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Date</th>
+              <th>Product</th>
+              <th>Customer</th>
+              <th>Qty</th>
+              <th>Unit</th>
+              <th>Rate (₹)</th>
+              <th>Total (₹)</th>
+              <th>Invoice No.</th>
+              <th>Profit (₹)</th>
+              <th>Notes</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-sales"></tbody>
+        </table>
+        <div class="empty-state" id="empty-sales" style="display:none">
+          <div class="empty-icon">📤</div>
+          <div class="empty-text">No sales recorded yet.<br>Click "Record Sale" to add your first entry.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- INVENTORY PAGE -->
+    <div class="page" id="page-inventory">
+      <div class="page-header">
+        <div class="page-title">Inventory</div>
+        <div class="page-sub">Current stock levels and product status</div>
+      </div>
+      <div class="toolbar">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" placeholder="Search product..." id="searchInventory" oninput="renderInventory()">
+        </div>
+        <select class="filter-select" id="filterCategory" onchange="renderInventory()">
+          <option value="">All Categories</option>
+          <option>Surgical Instruments</option>
+          <option>Disposables</option>
+          <option>Implants</option>
+          <option>Sutures</option>
+          <option>Diagnostic</option>
+          <option>PPE</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Category</th>
+              <th>Unit</th>
+              <th>Stock Bought</th>
+              <th>Stock Sold</th>
+              <th>In Stock</th>
+              <th>Avg Buy Rate (₹)</th>
+              <th>Avg Sell Rate (₹)</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-inventory"></tbody>
+        </table>
+        <div class="empty-state" id="empty-inventory" style="display:none">
+          <div class="empty-icon">🗄️</div>
+          <div class="empty-text">No inventory data yet.<br>Add purchases to track stock.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PARTIES PAGE -->
+    <div class="page" id="page-parties">
+      <div class="page-header" style="padding-bottom:12px">
+        <div class="page-title">Parties</div>
+        <div class="page-sub">Suppliers, companies, hospitals & medical stores</div>
+      </div>
+      <div class="toolbar">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" placeholder="Search party..." id="searchParty" oninput="renderParties()">
+        </div>
+        <button class="btn btn-primary" onclick="openAddPartyModal()">
+          <span class="btn-icon">+</span> Add Party
+        </button>
+      </div>
+      <div class="party-cards" id="party-cards-grid"></div>
+      <div class="empty-state" id="empty-parties" style="display:none">
+        <div class="empty-icon">🏢</div>
+        <div class="empty-text">No parties added yet.</div>
+      </div>
+    </div>
+
+    <!-- PRODUCTS PAGE -->
+    <div class="page" id="page-products">
+      <div class="page-header">
+        <div class="page-title">Products</div>
+        <div class="page-sub">Manage your product catalogue</div>
+      </div>
+      <div class="toolbar">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" placeholder="Search product..." id="searchProduct" oninput="renderProducts()">
+        </div>
+        <button class="btn btn-primary" onclick="openAddProductModal()">
+          <span class="btn-icon">+</span> Add Product
+        </button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Product Name</th>
+              <th>Category</th>
+              <th>Unit</th>
+              <th>HSN Code</th>
+              <th>Min Stock Alert</th>
+              <th>Description</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-products"></tbody>
+        </table>
+        <div class="empty-state" id="empty-products" style="display:none">
+          <div class="empty-icon">💊</div>
+          <div class="empty-text">No products added yet.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REPORTS PAGE -->
+    <div class="page" id="page-reports">
+      <div class="page-header">
+        <div class="page-title">Reports & Analytics</div>
+        <div class="page-sub">Business performance overview</div>
+      </div>
+      <div class="report-grid">
+        <div class="report-card">
+          <div class="report-card-title">This Month — Purchases</div>
+          <div class="report-card-value rb">₹<span id="rpt-monthBuy">0</span></div>
+        </div>
+        <div class="report-card">
+          <div class="report-card-title">This Month — Sales</div>
+          <div class="report-card-value ry">₹<span id="rpt-monthSell">0</span></div>
+        </div>
+        <div class="report-card">
+          <div class="report-card-title">This Month — Profit</div>
+          <div class="report-card-value rg">₹<span id="rpt-monthProfit">0</span></div>
+        </div>
+        <div class="report-card">
+          <div class="report-card-title">Top Supplier</div>
+          <div style="font-size:15px;font-weight:500;margin-top:4px" id="rpt-topSupplier">—</div>
+        </div>
+        <div class="report-card">
+          <div class="report-card-title">Top Customer</div>
+          <div style="font-size:15px;font-weight:500;margin-top:4px" id="rpt-topCustomer">—</div>
+        </div>
+        <div class="report-card">
+          <div class="report-card-title">Top Product</div>
+          <div style="font-size:15px;font-weight:500;margin-top:4px" id="rpt-topProduct">—</div>
+        </div>
+      </div>
+      <div style="padding:16px 28px 0;font-size:13px;color:var(--text3)">Monthly Summary</div>
+      <div class="table-wrap" style="padding-top:8px">
+        <table>
+          <thead>
+            <tr><th>Month</th><th>Purchases (₹)</th><th>Sales (₹)</th><th>Profit (₹)</th><th>Margin %</th></tr>
+          </thead>
+          <tbody id="tbody-monthly"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- EXPORT PAGE -->
+    <div class="page" id="page-export">
+      <div class="page-header">
+        <div class="page-title">Export Data</div>
+        <div class="page-sub">Download your business data as Excel or CSV files</div>
+      </div>
+      <div style="padding:20px 28px;display:flex;flex-direction:column;gap:14px;overflow-y:auto;flex:1">
+
+        <div class="export-box">
+          <div class="export-title">📥 Purchases Data</div>
+          <div class="export-row">
+            <button class="btn btn-primary" onclick="downloadExcel('purchases')">⬇ Download Excel (.xlsx)</button>
+            <button class="btn btn-secondary" onclick="exportTableCSV('purchases')">⬇ Download CSV</button>
+          </div>
+        </div>
+
+        <div class="export-box">
+          <div class="export-title">📤 Sales Data</div>
+          <div class="export-row">
+            <button class="btn btn-sell" onclick="downloadExcel('sales')">⬇ Download Excel (.xlsx)</button>
+            <button class="btn btn-secondary" onclick="exportTableCSV('sales')">⬇ Download CSV</button>
+          </div>
+        </div>
+
+        <div class="export-box">
+          <div class="export-title">📊 Full Business Report</div>
+          <div class="export-row">
+            <button class="btn btn-primary" onclick="downloadExcel('all')">⬇ Download Full Report Excel</button>
+            <button class="btn btn-secondary" onclick="exportTableCSV('all')">⬇ Download All CSV</button>
+          </div>
+        </div>
+
+        <div class="export-box">
+          <div class="export-title">💾 Backup & Restore</div>
+          <div class="export-row">
+            <button class="btn btn-secondary" onclick="backupData()">💾 Backup JSON</button>
+            <label class="btn btn-secondary" style="cursor:pointer">
+              📂 Restore from Backup
+              <input type="file" accept=".json" style="display:none" onchange="restoreData(event)">
+            </label>
+          </div>
+          <div style="font-size:11px;color:var(--text3);margin-top:10px">
+            💡 Use backup to transfer data between devices or restore after reinstall.
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════ -->
+    <!-- BILLING PAGE                                    -->
+    <!-- ═══════════════════════════════════════════════ -->
+    <div class="page" id="page-billing">
+      <div class="page-header">
+        <div class="page-title">Generate Bill</div>
+        <div class="page-sub">Create professional invoices and send via WhatsApp</div>
+      </div>
+
+      <div class="billing-layout">
+
+        <!-- LEFT: Bill Form -->
+        <div class="bill-form-panel">
+          <div class="panel-header">
+            <span class="panel-title">🧾 Bill Details</span>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-secondary" style="padding:5px 12px;font-size:11px" onclick="resetBill()">Clear</button>
+              <button class="btn btn-primary" style="padding:5px 12px;font-size:11px" onclick="autoFillFromLastSale()">Auto-fill from Last Sale</button>
+            </div>
+          </div>
+          <div style="flex:1;overflow-y:auto;padding:16px">
+
+            <!-- Bill Header Info -->
+            <div class="form-grid" style="margin-bottom:16px">
+              <div class="form-group">
+                <label class="form-label">Bill Number *</label>
+                <input type="text" class="form-input" id="bill-no" placeholder="e.g. CS-2025-001">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Bill Date *</label>
+                <input type="date" class="form-input" id="bill-date">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Due Date</label>
+                <input type="date" class="form-input" id="bill-due">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Bill Type</label>
+                <select class="form-select" id="bill-type">
+                  <option>Tax Invoice</option>
+                  <option>Proforma Invoice</option>
+                  <option>Delivery Challan</option>
+                  <option>Credit Note</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Customer Details -->
+            <div style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin-bottom:10px">Customer / Bill To</div>
+            <div class="form-grid" style="margin-bottom:16px">
+              <div class="form-group full">
+                <label class="form-label">Customer Name *</label>
+                <input type="text" class="form-input" id="bill-cust-name" list="bill-party-list" placeholder="Hospital / Medical Store name" oninput="onBillPartySelect(); updatePreview()">
+                <datalist id="bill-party-list"></datalist>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Contact Person</label>
+                <input type="text" class="form-input" id="bill-cust-contact" placeholder="Dr. Name / Manager" oninput="updatePreview()">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Phone (for WhatsApp)</label>
+                <input type="text" class="form-input" id="bill-cust-phone" placeholder="10-digit mobile number" oninput="updatePreview()">
+              </div>
+              <div class="form-group full">
+                <label class="form-label">Address</label>
+                <input type="text" class="form-input" id="bill-cust-address" placeholder="Full address" oninput="updatePreview()">
+              </div>
+              <div class="form-group">
+                <label class="form-label">GST Number</label>
+                <input type="text" class="form-input" id="bill-cust-gst" placeholder="Customer's GST No." oninput="updatePreview()">
+              </div>
+              <div class="form-group">
+                <label class="form-label">City</label>
+                <input type="text" class="form-input" id="bill-cust-city" placeholder="City" oninput="updatePreview()">
+              </div>
+            </div>
+
+            <!-- Items Table -->
+            <div style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin-bottom:8px">Items / Products</div>
+            <table class="bill-items-table" id="bill-items-table">
+              <thead>
+                <tr>
+                  <th style="width:30px">#</th>
+                  <th>Product Name</th>
+                  <th style="width:70px">HSN</th>
+                  <th style="width:55px">Qty</th>
+                  <th style="width:60px">Unit</th>
+                  <th style="width:80px">Rate (₹)</th>
+                  <th style="width:55px">GST%</th>
+                  <th style="width:90px">Amount (₹)</th>
+                  <th style="width:30px"></th>
+                </tr>
+              </thead>
+              <tbody id="bill-items-body"></tbody>
+            </table>
+            <div class="add-item-row">
+              <button class="btn btn-secondary" style="font-size:11px;padding:5px 12px" onclick="addBillItem()">+ Add Item</button>
+              <button class="btn btn-secondary" style="font-size:11px;padding:5px 12px" onclick="addItemFromProduct()">+ From Product List</button>
+            </div>
+
+            <!-- Totals & Terms -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px">
+              <div class="form-group">
+                <label class="form-label">Payment Terms</label>
+                <select class="form-select" id="bill-terms" onchange="updatePreview()">
+                  <option>Immediate</option>
+                  <option>Net 7 Days</option>
+                  <option>Net 15 Days</option>
+                  <option>Net 30 Days</option>
+                  <option>Net 45 Days</option>
+                  <option>Net 60 Days</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Payment Mode</label>
+                <select class="form-select" id="bill-paymode" onchange="updatePreview()">
+                  <option>Cash</option>
+                  <option>Bank Transfer</option>
+                  <option>Cheque</option>
+                  <option>UPI</option>
+                  <option>Credit</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Discount (₹)</label>
+                <input type="number" class="form-input" id="bill-discount" value="0" min="0" oninput="updatePreview()">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Shipping / Freight (₹)</label>
+                <input type="number" class="form-input" id="bill-shipping" value="0" min="0" oninput="updatePreview()">
+              </div>
+              <div class="form-group full">
+                <label class="form-label">Notes / Terms & Conditions</label>
+                <textarea class="form-textarea" id="bill-notes" rows="2" oninput="updatePreview()" placeholder="e.g. Goods once sold will not be returned. Subject to local jurisdiction."></textarea>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Action Buttons -->
+          <div style="padding:14px 16px;border-top:1px solid var(--border);display:flex;gap:10px;flex-wrap:wrap;background:var(--surface)">
+            <button class="btn btn-primary" onclick="downloadBillPDF()">⬇ Download Bill (PDF)</button>
+            <button class="btn btn-sell" onclick="printBill()">🖨 Print Bill</button>
+            <button class="btn btn-secondary" onclick="saveBillRecord()">💾 Save to Records</button>
+          </div>
+        </div>
+
+        <!-- RIGHT: Preview + WhatsApp -->
+        <div class="bill-preview-panel">
+
+          <!-- WhatsApp Panel -->
+          <div class="wa-panel">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+              <div style="font-size:12px;font-weight:600">
+                <span class="wa-status-dot disconnected" id="wa-dot"></span>
+                WhatsApp <span id="wa-status-text" style="color:var(--text3)">Disconnected</span>
+              </div>
+              <div style="display:flex;gap:6px">
+                <button class="btn btn-secondary" style="padding:4px 10px;font-size:11px" id="wa-connect-btn" onclick="waConnect()">Connect</button>
+                <button class="btn btn-danger" style="padding:4px 10px;font-size:11px;display:none" id="wa-disconnect-btn" onclick="waDisconnect()">Logout</button>
+              </div>
+            </div>
+            <div id="wa-qr-section" style="display:none">
+              <div style="font-size:11px;color:var(--text3);margin-bottom:8px">📱 Scan this QR code with WhatsApp on your phone:<br><span style="font-size:10px">WhatsApp → ⋮ Menu → Linked Devices → Link a Device</span></div>
+              <div class="wa-qr-wrap"><img id="wa-qr-img" src="" alt="QR Code"></div>
+            </div>
+            <div id="wa-connected-info" style="display:none;font-size:11px;color:var(--green)">
+              ✅ Connected as: <span id="wa-phone-display"></span>
+            </div>
+            <div style="margin-top:10px">
+              <button class="btn btn-whatsapp" style="width:100%;justify-content:center" id="wa-send-btn" onclick="sendBillViaWhatsApp()" disabled>
+                📲 Send Bill via WhatsApp
+              </button>
+            </div>
+          </div>
+
+          <!-- Bill Preview -->
+          <div class="wa-panel" style="padding:12px">
+            <div style="font-size:11px;font-weight:600;color:var(--text3);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em">Live Preview</div>
+            <div id="bill-preview-container" style="transform-origin:top left;overflow:hidden"></div>
+          </div>
+
+          <!-- Bill History -->
+          <div class="wa-panel" style="padding:0;overflow:hidden">
+            <div class="panel-header">
+              <span class="panel-title">Recent Bills</span>
+              <span style="font-size:11px;color:var(--text3)" id="bill-count">0 bills</span>
+            </div>
+            <div id="bill-history-list" style="max-height:200px;overflow-y:auto"></div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- BUY/SELL MODAL -->
+<div class="modal-overlay" id="txModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modalTitle">Record Purchase</div>
+      <button class="modal-close" onclick="closeModal('txModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Date *</label>
+          <input type="date" class="form-input" id="tx-date">
+        </div>
+        <div class="form-group">
+          <label class="form-label" id="tx-party-label">Supplier / Company *</label>
+          <input type="text" class="form-input" id="tx-party" list="party-list" placeholder="Type or select...">
+          <datalist id="party-list"></datalist>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Product *</label>
+          <input type="text" class="form-input" id="tx-product" list="product-list" placeholder="Type or select..." oninput="onProductSelect()">
+          <datalist id="product-list"></datalist>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Unit</label>
+          <select class="form-select" id="tx-unit">
+            <option>Piece</option><option>Box</option><option>Pack</option>
+            <option>Strip</option><option>Pair</option><option>Set</option>
+            <option>Roll</option><option>Kg</option><option>Litre</option><option>Vial</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Quantity *</label>
+          <input type="number" class="form-input" id="tx-qty" min="0" step="1" placeholder="0" oninput="calcTotal()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Rate per Unit (₹) *</label>
+          <input type="number" class="form-input" id="tx-rate" min="0" step="0.01" placeholder="0.00" oninput="calcTotal()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Invoice / Bill No.</label>
+          <input type="text" class="form-input" id="tx-invoice" placeholder="Optional">
+        </div>
+        <div class="form-group">
+          <label class="form-label">GST %</label>
+          <select class="form-select" id="tx-gst">
+            <option value="0">0%</option>
+            <option value="5">5%</option>
+            <option value="12">12%</option>
+            <option value="18" selected>18%</option>
+            <option value="28">28%</option>
+          </select>
+        </div>
+        <div class="form-group full">
+          <label class="form-label">Notes</label>
+          <input type="text" class="form-input" id="tx-notes" placeholder="Batch no, expiry, remarks...">
+        </div>
+        <div class="form-group full">
+          <div class="calc-preview">
+            <div>
+              <div class="calc-label">Total Amount (incl. GST)</div>
+              <div style="font-size:11px;color:var(--text3);margin-top:2px" id="calc-breakdown">Qty × Rate = ₹0 + GST = ₹0</div>
+            </div>
+            <div class="calc-value" id="calc-total">₹0.00</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('txModal')">Cancel</button>
+      <button class="btn btn-primary" id="modal-save-btn" onclick="saveTransaction()">Save Purchase</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD PARTY MODAL -->
+<div class="modal-overlay" id="partyModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Add Party</div>
+      <button class="modal-close" onclick="closeModal('partyModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full">
+          <label class="form-label">Party Name *</label>
+          <input type="text" class="form-input" id="p-name" placeholder="Name of supplier, hospital, etc.">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Type</label>
+          <select class="form-select" id="p-type">
+            <option>Supplier</option>
+            <option>Hospital</option>
+            <option>Medical Store</option>
+            <option>Wholesaler</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Phone</label>
+          <input type="text" class="form-input" id="p-phone" placeholder="+91...">
+        </div>
+        <div class="form-group">
+          <label class="form-label">GST Number</label>
+          <input type="text" class="form-input" id="p-gst" placeholder="Optional">
+        </div>
+        <div class="form-group">
+          <label class="form-label">City</label>
+          <input type="text" class="form-input" id="p-city" placeholder="City">
+        </div>
+        <div class="form-group full">
+          <label class="form-label">Address</label>
+          <textarea class="form-textarea" id="p-address" placeholder="Full address (optional)"></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('partyModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveParty()">Save Party</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD PRODUCT MODAL -->
+<div class="modal-overlay" id="productModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Add Product</div>
+      <button class="modal-close" onclick="closeModal('productModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full">
+          <label class="form-label">Product Name *</label>
+          <input type="text" class="form-input" id="prod-name" placeholder="e.g. Surgical Gloves Size M">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Category</label>
+          <select class="form-select" id="prod-cat">
+            <option>Surgical Instruments</option>
+            <option>Disposables</option>
+            <option>Implants</option>
+            <option>Sutures</option>
+            <option>Diagnostic</option>
+            <option>PPE</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Default Unit</label>
+          <select class="form-select" id="prod-unit">
+            <option>Piece</option><option>Box</option><option>Pack</option>
+            <option>Strip</option><option>Pair</option><option>Set</option>
+            <option>Roll</option><option>Kg</option><option>Litre</option><option>Vial</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">HSN Code</label>
+          <input type="text" class="form-input" id="prod-hsn" placeholder="e.g. 9018">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Min Stock Alert</label>
+          <input type="number" class="form-input" id="prod-min" placeholder="10" min="0">
+        </div>
+        <div class="form-group full">
+          <label class="form-label">Description</label>
+          <textarea class="form-textarea" id="prod-desc" placeholder="Specifications, brand, etc."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('productModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveProduct()">Save Product</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <span class="toast-icon" id="toast-icon">✅</span>
+  <span id="toast-msg">Saved!</span>
+</div>
+
+<script>
+// ============================================================
+// DATA STORE
+// ============================================================
+let DB = {
+  purchases: [],
+  sales: [],
+  parties: [],
+  products: []
+};
+let currentMode = 'buy';
+
+function loadDB() {
+  try {
+    const s = localStorage.getItem('chaturthi_db');
+    if (s) DB = JSON.parse(s);
+  } catch(e) {}
+}
+function saveDB() {
+  localStorage.setItem('chaturthi_db', JSON.stringify(DB));
+}
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+function navigate(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  const items = document.querySelectorAll('.nav-item');
+  items.forEach(i => { if (i.textContent.trim().toLowerCase().includes(page.toLowerCase().replace('dashboard','dashboard').replace('purchases','purchase').replace('sales','sales').replace('inventory','inventory').replace('parties','part').replace('products','product').replace('reports','report').replace('export','export'))) i.classList.add('active'); });
+  if (page === 'dashboard') renderDashboard();
+  if (page === 'purchases') { renderPurchases(); populateMonthFilter('purchase'); }
+  if (page === 'sales') { renderSales(); populateMonthFilter('sale'); }
+  if (page === 'inventory') renderInventory();
+  if (page === 'parties') renderParties();
+  if (page === 'products') renderProducts();
+  if (page === 'reports') renderReports();
+}
+
+// ============================================================
+// UTILS
+// ============================================================
+function fmt(n) {
+  return Number(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function fmtDate(d) {
+  if (!d) return '';
+  const parts = d.split('-');
+  if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  return d;
+}
+function today() {
+  return new Date().toISOString().split('T')[0];
+}
+function uid() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+}
+function showToast(msg, icon='✅') {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  document.getElementById('toast-icon').textContent = icon;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+function populateMonthFilter(type) {
+  const arr = type === 'purchase' ? DB.purchases : DB.sales;
+  const months = [...new Set(arr.map(r => r.date?.slice(0, 7)))].filter(Boolean).sort().reverse();
+  const sel = document.getElementById(type === 'purchase' ? 'filterPurchaseMonth' : 'filterSaleMonth');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">All Months</option>';
+  months.forEach(m => {
+    const [y, mo] = m.split('-');
+    const lbl = new Date(y, mo-1).toLocaleString('en-IN', { month: 'short', year: 'numeric' });
+    sel.innerHTML += `<option value="${m}">${lbl}</option>`;
+  });
+  sel.value = cur;
+}
+
+// ============================================================
+// MODAL
+// ============================================================
+function openModal(mode) {
+  currentMode = mode;
+  const isBuy = mode === 'buy';
+  document.getElementById('modalTitle').textContent = isBuy ? 'Record Purchase' : 'Record Sale';
+  document.getElementById('modalTitle').className = 'modal-title ' + mode;
+  document.getElementById('tx-party-label').textContent = isBuy ? 'Supplier / Company *' : 'Customer (Hospital / Medical) *';
+  document.getElementById('modal-save-btn').textContent = isBuy ? 'Save Purchase' : 'Save Sale';
+  document.getElementById('modal-save-btn').className = 'btn ' + (isBuy ? 'btn-primary' : 'btn-sell');
+  document.getElementById('tx-date').value = today();
+  document.getElementById('tx-party').value = '';
+  document.getElementById('tx-product').value = '';
+  document.getElementById('tx-qty').value = '';
+  document.getElementById('tx-rate').value = '';
+  document.getElementById('tx-invoice').value = '';
+  document.getElementById('tx-notes').value = '';
+  document.getElementById('calc-total').textContent = '₹0.00';
+  document.getElementById('calc-breakdown').textContent = 'Qty × Rate = ₹0 + GST = ₹0';
+
+  // Populate datalists
+  const partyList = document.getElementById('party-list');
+  partyList.innerHTML = '';
+  const filter = isBuy ? ['Supplier','Wholesaler'] : ['Hospital','Medical Store'];
+  DB.parties.forEach(p => {
+    if (!isBuy || filter.includes(p.type) || DB.parties.length < 5) {
+      partyList.innerHTML += `<option value="${p.name}">`;
+    }
+  });
+  // Also add unique parties from transactions
+  const existing = isBuy ? DB.purchases.map(p=>p.party) : DB.sales.map(s=>s.party);
+  [...new Set(existing)].forEach(n => {
+    if (!DB.parties.find(p=>p.name===n)) partyList.innerHTML += `<option value="${n}">`;
+  });
+
+  const prodList = document.getElementById('product-list');
+  prodList.innerHTML = '';
+  DB.products.forEach(p => { prodList.innerHTML += `<option value="${p.name}">`; });
+
+  document.getElementById('txModal').classList.add('open');
+}
+
+function openAddPartyModal() {
+  ['p-name','p-phone','p-gst','p-city','p-address'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  document.getElementById('partyModal').classList.add('open');
+}
+
+function openAddProductModal() {
+  ['prod-name','prod-hsn','prod-desc'].forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('prod-min').value = '10';
+  document.getElementById('productModal').classList.add('open');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
+});
+
+function onProductSelect() {
+  const name = document.getElementById('tx-product').value;
+  const prod = DB.products.find(p => p.name === name);
+  if (prod && prod.unit) document.getElementById('tx-unit').value = prod.unit;
+}
+
+function calcTotal() {
+  const qty = parseFloat(document.getElementById('tx-qty').value) || 0;
+  const rate = parseFloat(document.getElementById('tx-rate').value) || 0;
+  const gst = parseFloat(document.getElementById('tx-gst').value) || 0;
+  const base = qty * rate;
+  const gstAmt = base * gst / 100;
+  const total = base + gstAmt;
+  document.getElementById('calc-total').textContent = '₹' + fmt(total);
+  document.getElementById('calc-breakdown').textContent = `${qty} × ₹${rate} = ₹${fmt(base)} + GST ₹${fmt(gstAmt)} = ₹${fmt(total)}`;
+}
+
+function saveTransaction() {
+  const date = document.getElementById('tx-date').value;
+  const party = document.getElementById('tx-party').value.trim();
+  const product = document.getElementById('tx-product').value.trim();
+  const qty = parseFloat(document.getElementById('tx-qty').value);
+  const rate = parseFloat(document.getElementById('tx-rate').value);
+  if (!date || !party || !product || !qty || !rate) {
+    showToast('Please fill all required fields', '⚠️'); return;
+  }
+  const gst = parseFloat(document.getElementById('tx-gst').value) || 0;
+  const base = qty * rate;
+  const gstAmt = base * gst / 100;
+  const total = base + gstAmt;
+  const record = {
+    id: uid(), date, party, product,
+    qty, unit: document.getElementById('tx-unit').value,
+    rate, gst, gstAmt, total,
+    invoice: document.getElementById('tx-invoice').value.trim(),
+    notes: document.getElementById('tx-notes').value.trim()
+  };
+
+  // Auto-add party if new
+  if (!DB.parties.find(p => p.name === party)) {
+    DB.parties.push({ id: uid(), name: party, type: currentMode === 'buy' ? 'Supplier' : 'Hospital', phone:'', gst:'', city:'', address:'' });
+  }
+  // Auto-add product if new
+  if (!DB.products.find(p => p.name === product)) {
+    DB.products.push({ id: uid(), name: product, category: 'Other', unit: document.getElementById('tx-unit').value, hsn:'', min:10, desc:'' });
+  }
+
+  if (currentMode === 'buy') DB.purchases.push(record);
+  else DB.sales.push(record);
+
+  saveDB();
+  closeModal('txModal');
+  showToast(currentMode === 'buy' ? 'Purchase recorded!' : 'Sale recorded!');
+  if (currentMode === 'buy') { renderPurchases(); navigate('purchases'); }
+  else { renderSales(); navigate('sales'); }
+}
+
+function saveParty() {
+  const name = document.getElementById('p-name').value.trim();
+  if (!name) { showToast('Party name required', '⚠️'); return; }
+  DB.parties.push({
+    id: uid(), name,
+    type: document.getElementById('p-type').value,
+    phone: document.getElementById('p-phone').value,
+    gst: document.getElementById('p-gst').value,
+    city: document.getElementById('p-city').value,
+    address: document.getElementById('p-address').value
+  });
+  saveDB(); closeModal('partyModal'); renderParties();
+  showToast('Party added!');
+}
+
+function saveProduct() {
+  const name = document.getElementById('prod-name').value.trim();
+  if (!name) { showToast('Product name required', '⚠️'); return; }
+  DB.products.push({
+    id: uid(), name,
+    category: document.getElementById('prod-cat').value,
+    unit: document.getElementById('prod-unit').value,
+    hsn: document.getElementById('prod-hsn').value,
+    min: parseInt(document.getElementById('prod-min').value) || 10,
+    desc: document.getElementById('prod-desc').value
+  });
+  saveDB(); closeModal('productModal'); renderProducts();
+  showToast('Product added!');
+}
+
+function deleteRecord(type, id) {
+  if (!confirm('Delete this record?')) return;
+  DB[type] = DB[type].filter(r => r.id !== id);
+  saveDB();
+  if (type === 'purchases') renderPurchases();
+  if (type === 'sales') renderSales();
+  if (type === 'products') renderProducts();
+  if (type === 'parties') renderParties();
+  showToast('Deleted', '🗑️');
+}
+
+// ============================================================
+// RENDER PURCHASES
+// ============================================================
+function renderPurchases() {
+  const search = document.getElementById('searchPurchase').value.toLowerCase();
+  const month = document.getElementById('filterPurchaseMonth').value;
+  let rows = DB.purchases.filter(r => {
+    const matchQ = r.product?.toLowerCase().includes(search) || r.party?.toLowerCase().includes(search) || r.invoice?.toLowerCase().includes(search);
+    const matchM = !month || r.date?.startsWith(month);
+    return matchQ && matchM;
+  }).sort((a,b) => b.date?.localeCompare(a.date));
+
+  const tbody = document.getElementById('tbody-purchases');
+  const empty = document.getElementById('empty-purchases');
+  if (!rows.length) { tbody.innerHTML = ''; empty.style.display = ''; return; }
+  empty.style.display = 'none';
+  tbody.innerHTML = rows.map((r, i) => `
+    <tr>
+      <td class="td-muted">${i+1}</td>
+      <td class="td-secondary">${fmtDate(r.date)}</td>
+      <td><span style="font-weight:500">${r.product}</span></td>
+      <td class="td-secondary">${r.party}</td>
+      <td class="amount-cell">${r.qty}</td>
+      <td class="td-muted">${r.unit||''}</td>
+      <td class="amount-cell">₹${fmt(r.rate)}</td>
+      <td class="amount-cell highlight-accent">₹${fmt(r.total)}</td>
+      <td class="td-muted">${r.invoice||'—'}</td>
+      <td class="td-muted" style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.notes||''}">${r.notes||'—'}</td>
+      <td><button class="btn btn-danger" style="padding:4px 10px;font-size:11px" onclick="deleteRecord('purchases','${r.id}')">Delete</button></td>
+    </tr>`).join('');
+}
+
+// ============================================================
+// RENDER SALES
+// ============================================================
+function renderSales() {
+  const search = document.getElementById('searchSale').value.toLowerCase();
+  const month = document.getElementById('filterSaleMonth').value;
+  let rows = DB.sales.filter(r => {
+    const matchQ = r.product?.toLowerCase().includes(search) || r.party?.toLowerCase().includes(search);
+    const matchM = !month || r.date?.startsWith(month);
+    return matchQ && matchM;
+  }).sort((a,b) => b.date?.localeCompare(a.date));
+
+  const tbody = document.getElementById('tbody-sales');
+  const empty = document.getElementById('empty-sales');
+  if (!rows.length) { tbody.innerHTML = ''; empty.style.display = ''; return; }
+  empty.style.display = 'none';
+
+  // Calculate avg buy price per product
+  tbody.innerHTML = rows.map((r, i) => {
+    const buys = DB.purchases.filter(b => b.product === r.product);
+    const avgBuy = buys.length ? buys.reduce((s,b) => s + b.rate, 0) / buys.length : 0;
+    const profit = (r.rate - avgBuy) * r.qty;
+    const profitClass = profit >= 0 ? 'profit-pos' : 'profit-neg';
+    return `<tr>
+      <td class="td-muted">${i+1}</td>
+      <td class="td-secondary">${fmtDate(r.date)}</td>
+      <td><span style="font-weight:500">${r.product}</span></td>
+      <td class="td-secondary">${r.party}</td>
+      <td class="amount-cell">${r.qty}</td>
+      <td class="td-muted">${r.unit||''}</td>
+      <td class="amount-cell">₹${fmt(r.rate)}</td>
+      <td class="amount-cell highlight-sell">₹${fmt(r.total)}</td>
+      <td class="td-muted">${r.invoice||'—'}</td>
+      <td class="amount-cell ${profitClass}">₹${fmt(profit)}</td>
+      <td class="td-muted" style="max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.notes||'—'}</td>
+      <td><button class="btn btn-danger" style="padding:4px 10px;font-size:11px" onclick="deleteRecord('sales','${r.id}')">Delete</button></td>
+    </tr>`;
+  }).join('');
+}
+
+// ============================================================
+// RENDER INVENTORY
+// ============================================================
+function renderInventory() {
+  const search = document.getElementById('searchInventory').value.toLowerCase();
+  const cat = document.getElementById('filterCategory').value;
+
+  // Build inventory from purchases & sales
+  const products = new Set([
+    ...DB.purchases.map(r=>r.product),
+    ...DB.sales.map(r=>r.product),
+    ...DB.products.map(p=>p.name)
+  ]);
+
+  let rows = [...products].map(name => {
+    const prod = DB.products.find(p=>p.name===name)||{};
+    const buys = DB.purchases.filter(r=>r.product===name);
+    const sells = DB.sales.filter(r=>r.product===name);
+    const bought = buys.reduce((s,r)=>s+r.qty,0);
+    const sold = sells.reduce((s,r)=>s+r.qty,0);
+    const inStock = bought - sold;
+    const avgBuy = buys.length ? buys.reduce((s,r)=>s+r.rate,0)/buys.length : 0;
+    const avgSell = sells.length ? sells.reduce((s,r)=>s+r.rate,0)/sells.length : 0;
+    return { name, category: prod.category||'—', unit: prod.unit||'—', bought, sold, inStock, avgBuy, avgSell, min: prod.min||10 };
+  }).filter(r => {
+    const matchQ = r.name.toLowerCase().includes(search);
+    const matchC = !cat || r.category === cat;
+    return matchQ && matchC;
+  });
+
+  const tbody = document.getElementById('tbody-inventory');
+  const empty = document.getElementById('empty-inventory');
+  if (!rows.length) { tbody.innerHTML = ''; empty.style.display = ''; return; }
+  empty.style.display = 'none';
+
+  tbody.innerHTML = rows.map(r => {
+    const pct = Math.min(100, (r.inStock / Math.max(r.bought,1)) * 100);
+    const color = r.inStock <= r.min ? 'var(--red)' : r.inStock <= r.min*2 ? 'var(--sell)' : 'var(--green)';
+    const status = r.inStock <= 0 ? '<span class="tag tag-low">Out of Stock</span>' :
+                   r.inStock <= r.min ? '<span class="tag tag-low">Low Stock</span>' :
+                   '<span class="tag tag-ok">In Stock</span>';
+    return `<tr>
+      <td style="font-weight:500">${r.name}</td>
+      <td class="td-secondary">${r.category}</td>
+      <td class="td-muted">${r.unit}</td>
+      <td class="amount-cell">${r.bought}</td>
+      <td class="amount-cell">${r.sold}</td>
+      <td>
+        <div class="stock-bar-wrap">
+          <span class="amount-cell" style="min-width:40px">${r.inStock}</span>
+          <div class="stock-bar"><div class="stock-bar-fill" style="width:${pct}%;background:${color}"></div></div>
+        </div>
+      </td>
+      <td class="amount-cell">₹${fmt(r.avgBuy)}</td>
+      <td class="amount-cell">₹${fmt(r.avgSell)}</td>
+      <td>${status}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ============================================================
+// RENDER PARTIES
+// ============================================================
+function renderParties() {
+  const search = document.getElementById('searchParty').value.toLowerCase();
+  const grid = document.getElementById('party-cards-grid');
+  const empty = document.getElementById('empty-parties');
+
+  let parties = DB.parties.filter(p => p.name.toLowerCase().includes(search));
+  if (!parties.length) { grid.innerHTML=''; empty.style.display=''; return; }
+  empty.style.display = 'none';
+
+  grid.innerHTML = parties.map(p => {
+    const buys = DB.purchases.filter(r=>r.party===p.name).reduce((s,r)=>s+r.total,0);
+    const sells = DB.sales.filter(r=>r.party===p.name).reduce((s,r)=>s+r.total,0);
+    const typeColors = {Supplier:'var(--accent)',Hospital:'var(--accent2)','Medical Store':'var(--sell)',Wholesaler:'var(--green)',Other:'var(--text3)'};
+    return `<div class="party-card">
+      <div class="party-name">${p.name}</div>
+      <div class="party-type" style="color:${typeColors[p.type]||'var(--text3)'}">${p.type}</div>
+      ${p.city ? `<div class="td-muted" style="font-size:11px;margin-bottom:8px">📍 ${p.city}</div>` : ''}
+      ${p.phone ? `<div class="td-muted" style="font-size:11px;margin-bottom:8px">📞 ${p.phone}</div>` : ''}
+      <div class="party-stats">
+        ${buys>0?`<div><div class="party-stat-val highlight-accent">₹${fmt(buys)}</div><div class="party-stat-label">Purchased</div></div>`:''}
+        ${sells>0?`<div><div class="party-stat-val highlight-sell">₹${fmt(sells)}</div><div class="party-stat-label">Sold</div></div>`:''}
+        ${buys===0&&sells===0?`<div class="td-muted" style="font-size:11px">No transactions yet</div>`:''}
+      </div>
+      <div style="margin-top:10px;display:flex;gap:6px">
+        <button class="btn btn-danger" style="padding:4px 10px;font-size:11px" onclick="deleteRecord('parties','${p.id}')">Remove</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ============================================================
+// RENDER PRODUCTS
+// ============================================================
+function renderProducts() {
+  const search = document.getElementById('searchProduct').value.toLowerCase();
+  const rows = DB.products.filter(p => p.name.toLowerCase().includes(search));
+  const tbody = document.getElementById('tbody-products');
+  const empty = document.getElementById('empty-products');
+  if (!rows.length) { tbody.innerHTML=''; empty.style.display=''; return; }
+  empty.style.display='none';
+  tbody.innerHTML = rows.map(p => `
+    <tr>
+      <td style="font-weight:500">${p.name}</td>
+      <td class="td-secondary">${p.category}</td>
+      <td class="td-muted">${p.unit}</td>
+      <td class="td-muted">${p.hsn||'—'}</td>
+      <td class="td-secondary">${p.min}</td>
+      <td class="td-muted" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.desc||'—'}</td>
+      <td><button class="btn btn-danger" style="padding:4px 10px;font-size:11px" onclick="deleteRecord('products','${p.id}')">Delete</button></td>
+    </tr>`).join('');
+}
+
+// ============================================================
+// RENDER DASHBOARD
+// ============================================================
+function renderDashboard() {
+  const totalBuy = DB.purchases.reduce((s,r)=>s+r.total,0);
+  const totalSell = DB.sales.reduce((s,r)=>s+r.total,0);
+  const profit = totalSell - totalBuy;
+  const margin = totalSell ? (profit/totalSell*100).toFixed(1) : 0;
+
+  document.getElementById('ds-totalBuy').textContent = fmt(totalBuy);
+  document.getElementById('ds-totalSell').textContent = fmt(totalSell);
+  document.getElementById('ds-buyCount').textContent = DB.purchases.length + ' purchase transactions';
+  document.getElementById('ds-sellCount').textContent = DB.sales.length + ' sale transactions';
+  document.getElementById('ds-profit').textContent = '₹' + fmt(profit);
+  document.getElementById('ds-profit').style.color = profit >= 0 ? 'var(--green)' : 'var(--red)';
+  document.getElementById('ds-margin').textContent = 'Margin: ' + margin + '%';
+  document.getElementById('ds-products').textContent = DB.products.length;
+
+  // Low stock
+  const lowStockItems = getLowStockItems();
+  document.getElementById('ds-lowStock').textContent = lowStockItems.length + ' low stock alerts';
+
+  // Recent transactions
+  const all = [
+    ...DB.purchases.map(r => ({...r, type:'buy'})),
+    ...DB.sales.map(r => ({...r, type:'sell'}))
+  ].sort((a,b) => b.date?.localeCompare(a.date)).slice(0, 12);
+
+  const recent = document.getElementById('dash-recent');
+  if (!all.length) {
+    recent.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">No transactions yet</div></div>';
+  } else {
+    recent.innerHTML = all.map(r => `
+      <div class="mini-row">
+        <span class="mini-badge ${r.type==='buy'?'badge-buy':'badge-sell'}">${r.type==='buy'?'BUY':'SELL'}</span>
+        <div class="mini-info">
+          <div class="mini-name">${r.product}</div>
+          <div class="mini-detail">${r.party} · ${fmtDate(r.date)}</div>
+        </div>
+        <div class="mini-amount">₹${fmt(r.total)}</div>
+      </div>`).join('');
+  }
+
+  // Low stock list
+  const ls = document.getElementById('dash-lowstock');
+  if (!lowStockItems.length) {
+    ls.innerHTML = '<div class="empty-state"><div class="empty-icon">✅</div><div class="empty-text">All products well stocked</div></div>';
+  } else {
+    ls.innerHTML = lowStockItems.map(r => `
+      <div class="mini-row">
+        <span class="mini-badge badge-sell" style="background:rgba(239,68,68,0.15);color:var(--red)">${r.inStock <= 0 ? 'OUT' : 'LOW'}</span>
+        <div class="mini-info">
+          <div class="mini-name">${r.name}</div>
+          <div class="mini-detail">In stock: ${r.inStock} · Min: ${r.min}</div>
+        </div>
+      </div>`).join('');
+  }
+}
+
+function getLowStockItems() {
+  const products = new Set([...DB.purchases.map(r=>r.product), ...DB.products.map(p=>p.name)]);
+  return [...products].map(name => {
+    const prod = DB.products.find(p=>p.name===name)||{};
+    const bought = DB.purchases.filter(r=>r.product===name).reduce((s,r)=>s+r.qty,0);
+    const sold = DB.sales.filter(r=>r.product===name).reduce((s,r)=>s+r.qty,0);
+    return { name, inStock: bought-sold, min: prod.min||10 };
+  }).filter(r => r.inStock <= r.min);
+}
+
+// ============================================================
+// RENDER REPORTS
+// ============================================================
+function renderReports() {
+  const now = new Date();
+  const curMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+
+  const monthBuy = DB.purchases.filter(r=>r.date?.startsWith(curMonth)).reduce((s,r)=>s+r.total,0);
+  const monthSell = DB.sales.filter(r=>r.date?.startsWith(curMonth)).reduce((s,r)=>s+r.total,0);
+  document.getElementById('rpt-monthBuy').textContent = fmt(monthBuy);
+  document.getElementById('rpt-monthSell').textContent = fmt(monthSell);
+  document.getElementById('rpt-monthProfit').textContent = fmt(monthSell - monthBuy);
+
+  // Top supplier
+  const suppMap = {};
+  DB.purchases.forEach(r => suppMap[r.party] = (suppMap[r.party]||0) + r.total);
+  const topSupp = Object.entries(suppMap).sort((a,b)=>b[1]-a[1])[0];
+  document.getElementById('rpt-topSupplier').textContent = topSupp ? `${topSupp[0]} (₹${fmt(topSupp[1])})` : '—';
+
+  const custMap = {};
+  DB.sales.forEach(r => custMap[r.party] = (custMap[r.party]||0) + r.total);
+  const topCust = Object.entries(custMap).sort((a,b)=>b[1]-a[1])[0];
+  document.getElementById('rpt-topCustomer').textContent = topCust ? `${topCust[0]} (₹${fmt(topCust[1])})` : '—';
+
+  const prodMap = {};
+  DB.sales.forEach(r => prodMap[r.product] = (prodMap[r.product]||0) + r.total);
+  const topProd = Object.entries(prodMap).sort((a,b)=>b[1]-a[1])[0];
+  document.getElementById('rpt-topProduct').textContent = topProd ? `${topProd[0]} (₹${fmt(topProd[1])})` : '—';
+
+  // Monthly summary
+  const months = new Set([
+    ...DB.purchases.map(r=>r.date?.slice(0,7)),
+    ...DB.sales.map(r=>r.date?.slice(0,7))
+  ]);
+  const monthly = [...months].filter(Boolean).sort().reverse().map(m => {
+    const buy = DB.purchases.filter(r=>r.date?.startsWith(m)).reduce((s,r)=>s+r.total,0);
+    const sell = DB.sales.filter(r=>r.date?.startsWith(m)).reduce((s,r)=>s+r.total,0);
+    const profit = sell - buy;
+    const margin = sell ? (profit/sell*100).toFixed(1) : 0;
+    const [y, mo] = m.split('-');
+    const lbl = new Date(y, mo-1).toLocaleString('en-IN', { month: 'long', year: 'numeric' });
+    return { lbl, buy, sell, profit, margin };
+  });
+
+  document.getElementById('tbody-monthly').innerHTML = monthly.length ? monthly.map(r => `
+    <tr>
+      <td style="font-weight:500">${r.lbl}</td>
+      <td class="amount-cell highlight-accent">₹${fmt(r.buy)}</td>
+      <td class="amount-cell highlight-sell">₹${fmt(r.sell)}</td>
+      <td class="amount-cell ${r.profit>=0?'profit-pos':'profit-neg'}">₹${fmt(r.profit)}</td>
+      <td class="td-secondary">${r.margin}%</td>
+    </tr>`).join('') :
+    '<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--text3)">No data yet</td></tr>';
+}
+
+// ============================================================
+// EXPORT FUNCTIONS
+// ============================================================
+function toCSV(headers, rows) {
+  const esc = v => `"${String(v||'').replace(/"/g,'""')}"`;
+  return [headers.map(esc).join(','), ...rows.map(r => r.map(esc).join(','))].join('\n');
+}
+
+function downloadCSV(filename, csv) {
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  showToast('CSV downloaded!', '📄');
+}
+
+function exportTableCSV(type) {
+  if (type === 'purchases') {
+    const h = ['#','Date','Product','Supplier/Company','Qty','Unit','Rate(₹)','GST%','GST Amount(₹)','Total(₹)','Invoice No','Notes'];
+    const r = DB.purchases.map((r,i) => [i+1,r.date,r.product,r.party,r.qty,r.unit,r.rate,r.gst,r.gstAmt?.toFixed(2),r.total?.toFixed(2),r.invoice,r.notes]);
+    downloadCSV('Chaturthi_Surgicals_Purchases.csv', toCSV(h,r));
+  } else if (type === 'sales') {
+    const h = ['#','Date','Product','Customer','Qty','Unit','Rate(₹)','GST%','GST Amount(₹)','Total(₹)','Invoice No','Notes'];
+    const r = DB.sales.map((r,i) => [i+1,r.date,r.product,r.party,r.qty,r.unit,r.rate,r.gst,r.gstAmt?.toFixed(2),r.total?.toFixed(2),r.invoice,r.notes]);
+    downloadCSV('Chaturthi_Surgicals_Sales.csv', toCSV(h,r));
+  } else {
+    exportTableCSV('purchases');
+    setTimeout(() => exportTableCSV('sales'), 500);
+  }
+}
+
+// EXCEL DOWNLOAD (using HTML table trick for .xlsx-like format)
+function downloadExcel(type) {
+  let html = '';
+  const style = `<style>
+    body{font-family:Arial,sans-serif}
+    table{border-collapse:collapse;width:100%}
+    th{background:#0a3d2e;color:#fff;padding:8px 12px;text-align:left;font-size:12px}
+    td{padding:7px 12px;border-bottom:1px solid #e5e7eb;font-size:12px}
+    tr:nth-child(even) td{background:#f8fafb}
+    h2{color:#0a3d2e;font-family:Georgia,serif;margin:20px 0 8px}
+    .header{background:#0a3d2e;color:white;padding:16px 20px;margin-bottom:20px}
+    .header h1{font-family:Georgia,serif;font-size:20px;margin:0}
+    .header p{margin:4px 0 0;font-size:12px;opacity:0.8}
+    .summary{background:#f0fdf4;border:1px solid #bbf7d0;padding:12px 16px;margin:12px 0;border-radius:6px}
+    .summary span{font-size:13px;margin-right:24px}
+  </style>`;
+
+  const now = new Date().toLocaleDateString('en-IN');
+
+  if (type === 'purchases' || type === 'all') {
+    const total = DB.purchases.reduce((s,r)=>s+r.total,0);
+    html += `<div class="header"><h1>Chaturthi Surgicals</h1><p>Purchases Report · Generated: ${now}</p></div>`;
+    html += `<h2>Purchase Transactions</h2>`;
+    html += `<div class="summary"><span><b>Total Records:</b> ${DB.purchases.length}</span><span><b>Total Value:</b> ₹${fmt(total)}</span></div>`;
+    html += `<table><thead><tr><th>#</th><th>Date</th><th>Product</th><th>Supplier</th><th>Qty</th><th>Unit</th><th>Rate (₹)</th><th>GST %</th><th>GST Amt (₹)</th><th>Total (₹)</th><th>Invoice No</th><th>Notes</th></tr></thead><tbody>`;
+    DB.purchases.forEach((r,i) => {
+      html += `<tr><td>${i+1}</td><td>${fmtDate(r.date)}</td><td>${r.product}</td><td>${r.party}</td><td>${r.qty}</td><td>${r.unit||''}</td><td>${fmt(r.rate)}</td><td>${r.gst}%</td><td>${fmt(r.gstAmt)}</td><td><b>${fmt(r.total)}</b></td><td>${r.invoice||''}</td><td>${r.notes||''}</td></tr>`;
+    });
+    html += `</tbody></table>`;
+  }
+
+  if (type === 'sales' || type === 'all') {
+    const total = DB.sales.reduce((s,r)=>s+r.total,0);
+    if (type === 'all') html += `<br><br>`;
+    if (type === 'sales') html += `<div class="header"><h1>Chaturthi Surgicals</h1><p>Sales Report · Generated: ${now}</p></div>`;
+    html += `<h2>Sales Transactions</h2>`;
+    html += `<div class="summary"><span><b>Total Records:</b> ${DB.sales.length}</span><span><b>Total Value:</b> ₹${fmt(total)}</span></div>`;
+    html += `<table><thead><tr><th>#</th><th>Date</th><th>Product</th><th>Customer</th><th>Qty</th><th>Unit</th><th>Rate (₹)</th><th>GST %</th><th>GST Amt (₹)</th><th>Total (₹)</th><th>Invoice No</th><th>Notes</th></tr></thead><tbody>`;
+    DB.sales.forEach((r,i) => {
+      html += `<tr><td>${i+1}</td><td>${fmtDate(r.date)}</td><td>${r.product}</td><td>${r.party}</td><td>${r.qty}</td><td>${r.unit||''}</td><td>${fmt(r.rate)}</td><td>${r.gst}%</td><td>${fmt(r.gstAmt)}</td><td><b>${fmt(r.total)}</b></td><td>${r.invoice||''}</td><td>${r.notes||''}</td></tr>`;
+    });
+    html += `</tbody></table>`;
+  }
+
+  if (type === 'all') {
+    // Summary sheet
+    html += `<br><br><h2>Summary</h2>`;
+    const totalBuy = DB.purchases.reduce((s,r)=>s+r.total,0);
+    const totalSell = DB.sales.reduce((s,r)=>s+r.total,0);
+    html += `<table><thead><tr><th>Metric</th><th>Value</th></tr></thead><tbody>
+      <tr><td>Total Purchases</td><td>₹${fmt(totalBuy)}</td></tr>
+      <tr><td>Total Sales</td><td>₹${fmt(totalSell)}</td></tr>
+      <tr><td>Gross Profit</td><td>₹${fmt(totalSell-totalBuy)}</td></tr>
+      <tr><td>Total Products</td><td>${DB.products.length}</td></tr>
+      <tr><td>Total Parties</td><td>${DB.parties.length}</td></tr>
+    </tbody></table>`;
+  }
+
+  const fullHtml = `<html><head>${style}</head><body>${html}</body></html>`;
+  const blob = new Blob([fullHtml], {type:'application/vnd.ms-excel;charset=utf-8;'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = type === 'all' ? 'Chaturthi_Surgicals_Full_Report.xls' :
+               type === 'purchases' ? 'Chaturthi_Surgicals_Purchases.xls' : 'Chaturthi_Surgicals_Sales.xls';
+  a.click();
+  showToast('Excel file downloaded!', '📊');
+}
+
+function backupData() {
+  const blob = new Blob([JSON.stringify(DB, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `Chaturthi_Backup_${today()}.json`;
+  a.click();
+  showToast('Backup downloaded!', '💾');
+}
+
+function restoreData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      DB = JSON.parse(e.target.result);
+      saveDB();
+      renderDashboard();
+      showToast('Data restored successfully!', '✅');
+    } catch { showToast('Invalid backup file', '❌'); }
+  };
+  reader.readAsText(file);
+}
+
+// ============================================================
+// INIT
+// ============================================================
+function updateDate() {
+  document.getElementById('titleDate').textContent =
+    new Date().toLocaleDateString('en-IN', { weekday:'short', day:'2-digit', month:'short', year:'numeric' });
+}
+
+loadDB();
+updateDate();
+setInterval(updateDate, 60000);
+renderDashboard();
+
+// ============================================================
+// BILLING SYSTEM
+// ============================================================
+let billItems = [];
+let billCounter = parseInt(localStorage.getItem('chaturthi_bill_counter') || '0');
+let savedBills = JSON.parse(localStorage.getItem('chaturthi_bills') || '[]');
+
+function saveBills() {
+  localStorage.setItem('chaturthi_bills', JSON.stringify(savedBills));
+}
+
+function initBillingPage() {
+  // Set defaults
+  document.getElementById('bill-date').value = today();
+  const due = new Date(); due.setDate(due.getDate() + 30);
+  document.getElementById('bill-due').value = due.toISOString().split('T')[0];
+  // Auto-generate bill number
+  billCounter++;
+  const yr = new Date().getFullYear();
+  const mo = String(new Date().getMonth()+1).padStart(2,'0');
+  document.getElementById('bill-no').value = `CS-${yr}${mo}-${String(billCounter).padStart(3,'0')}`;
+
+  // Populate party datalist
+  const dl = document.getElementById('bill-party-list');
+  dl.innerHTML = '';
+  const names = [...new Set([...DB.parties.map(p=>p.name), ...DB.sales.map(s=>s.party)])];
+  names.forEach(n => { dl.innerHTML += `<option value="${n}">`; });
+
+  // Init items
+  if (billItems.length === 0) addBillItem();
+  updatePreview();
+  renderBillHistory();
+  waCheckStatus();
+}
+
+function onBillPartySelect() {
+  const name = document.getElementById('bill-cust-name').value;
+  const party = DB.parties.find(p => p.name === name);
+  if (party) {
+    if (party.phone) document.getElementById('bill-cust-phone').value = party.phone;
+    if (party.address) document.getElementById('bill-cust-address').value = party.address;
+    if (party.gst) document.getElementById('bill-cust-gst').value = party.gst;
+    if (party.city) document.getElementById('bill-cust-city').value = party.city;
+  }
+}
+
+function addBillItem(productName='', hsn='', qty=1, unit='Piece', rate=0, gst=18) {
+  const id = 'bi_' + uid();
+  billItems.push({ id, productName, hsn, qty, unit, rate, gst });
+  renderBillItemsTable();
+  updatePreview();
+}
+
+function addItemFromProduct() {
+  const name = prompt('Enter product name to add (must match your product list):');
+  if (!name) return;
+  const prod = DB.products.find(p => p.name.toLowerCase() === name.toLowerCase());
+  if (prod) {
+    addBillItem(prod.name, prod.hsn || '', 1, prod.unit || 'Piece', 0, 18);
+  } else {
+    addBillItem(name);
+  }
+}
+
+function removeBillItem(id) {
+  billItems = billItems.filter(i => i.id !== id);
+  renderBillItemsTable();
+  updatePreview();
+}
+
+function updateBillItem(id, field, value) {
+  const item = billItems.find(i => i.id === id);
+  if (item) {
+    item[field] = field === 'qty' || field === 'rate' || field === 'gst' ? parseFloat(value)||0 : value;
+  }
+  updatePreview();
+}
+
+function renderBillItemsTable() {
+  const tbody = document.getElementById('bill-items-body');
+  const prodNames = DB.products.map(p=>p.name);
+  tbody.innerHTML = billItems.map((item, i) => `
+    <tr>
+      <td style="color:var(--text3)">${i+1}</td>
+      <td>
+        <input type="text" value="${item.productName}" list="bill-prod-dl"
+          onchange="updateBillItem('${item.id}','productName',this.value)"
+          oninput="updateBillItem('${item.id}','productName',this.value)"
+          style="min-width:120px" placeholder="Product name">
+        <datalist id="bill-prod-dl">${prodNames.map(n=>`<option value="${n}">`).join('')}</datalist>
+      </td>
+      <td><input type="text" value="${item.hsn}" onchange="updateBillItem('${item.id}','hsn',this.value)" placeholder="HSN"></td>
+      <td><input type="number" value="${item.qty}" min="0" step="0.5" onchange="updateBillItem('${item.id}','qty',this.value)" oninput="updateBillItem('${item.id}','qty',this.value)"></td>
+      <td>
+        <select onchange="updateBillItem('${item.id}','unit',this.value)">
+          ${['Piece','Box','Pack','Strip','Pair','Set','Roll','Kg','Litre','Vial'].map(u=>`<option ${item.unit===u?'selected':''}>${u}</option>`).join('')}
+        </select>
+      </td>
+      <td><input type="number" value="${item.rate}" min="0" step="0.01" onchange="updateBillItem('${item.id}','rate',this.value)" oninput="updateBillItem('${item.id}','rate',this.value)"></td>
+      <td>
+        <select onchange="updateBillItem('${item.id}','gst',this.value)">
+          ${[0,5,12,18,28].map(g=>`<option value="${g}" ${item.gst===g?'selected':''}>${g}%</option>`).join('')}
+        </select>
+      </td>
+      <td style="font-weight:500">₹${fmt(item.qty * item.rate * (1 + item.gst/100))}</td>
+      <td><button onclick="removeBillItem('${item.id}')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:14px" title="Remove">✕</button></td>
+    </tr>`).join('');
+}
+
+function calcBillTotals() {
+  const subtotal = billItems.reduce((s,i) => s + (i.qty * i.rate), 0);
+  const totalGst = billItems.reduce((s,i) => s + (i.qty * i.rate * i.gst / 100), 0);
+  const discount = parseFloat(document.getElementById('bill-discount')?.value || 0);
+  const shipping = parseFloat(document.getElementById('bill-shipping')?.value || 0);
+  const grand = subtotal + totalGst - discount + shipping;
+  return { subtotal, totalGst, discount, shipping, grand };
+}
+
+function getBillData() {
+  return {
+    no: document.getElementById('bill-no')?.value || '',
+    date: document.getElementById('bill-date')?.value || today(),
+    due: document.getElementById('bill-due')?.value || '',
+    type: document.getElementById('bill-type')?.value || 'Tax Invoice',
+    custName: document.getElementById('bill-cust-name')?.value || '',
+    custContact: document.getElementById('bill-cust-contact')?.value || '',
+    custPhone: document.getElementById('bill-cust-phone')?.value || '',
+    custAddress: document.getElementById('bill-cust-address')?.value || '',
+    custGst: document.getElementById('bill-cust-gst')?.value || '',
+    custCity: document.getElementById('bill-cust-city')?.value || '',
+    terms: document.getElementById('bill-terms')?.value || '',
+    paymode: document.getElementById('bill-paymode')?.value || '',
+    notes: document.getElementById('bill-notes')?.value || '',
+    items: billItems,
+    ...calcBillTotals()
+  };
+}
+
+function numberToWords(n) {
+  const a = ['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten',
+    'Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
+  const b = ['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+  n = Math.round(n);
+  if (n === 0) return 'Zero';
+  if (n < 20) return a[n];
+  if (n < 100) return b[Math.floor(n/10)] + (n%10 ? ' '+a[n%10] : '');
+  if (n < 1000) return a[Math.floor(n/100)] + ' Hundred' + (n%100 ? ' '+numberToWords(n%100) : '');
+  if (n < 100000) return numberToWords(Math.floor(n/1000)) + ' Thousand' + (n%1000 ? ' '+numberToWords(n%1000) : '');
+  if (n < 10000000) return numberToWords(Math.floor(n/100000)) + ' Lakh' + (n%100000 ? ' '+numberToWords(n%100000) : '');
+  return numberToWords(Math.floor(n/10000000)) + ' Crore' + (n%10000000 ? ' '+numberToWords(n%10000000) : '');
+}
+
+function buildInvoiceHTML(data, forPrint=false) {
+  const { no, date, due, type, custName, custContact, custPhone, custAddress, custGst, custCity,
+          terms, paymode, notes, items, subtotal, totalGst, discount, shipping, grand } = data;
+  const itemRows = items.map((item, i) => {
+    const base = item.qty * item.rate;
+    const gstAmt = base * item.gst / 100;
+    return `<tr>
+      <td>${i+1}</td>
+      <td>${item.productName||'—'}</td>
+      <td>${item.hsn||'—'}</td>
+      <td>${item.qty} ${item.unit}</td>
+      <td>₹${fmt(item.rate)}</td>
+      <td>${item.gst}%</td>
+      <td>₹${fmt(gstAmt)}</td>
+      <td><b>₹${fmt(base + gstAmt)}</b></td>
+    </tr>`;
+  }).join('');
+
+  const inWords = numberToWords(Math.floor(grand)) + ' Rupees Only';
+
+  return `
+  <div class="invoice-preview" id="invoice-render" style="${forPrint?'width:760px':'width:100%'}">
+    <div class="inv-header">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div class="inv-company">⚕ Chaturthi Surgicals</div>
+          <div class="inv-tagline">Wholesale Surgical Instruments & Medical Supplies</div>
+          <div style="font-size:10px;opacity:0.7;margin-top:6px;line-height:1.5">
+            GSTIN: &nbsp; | &nbsp; Drug Lic. No.: &nbsp; | &nbsp; Palghar, Maharashtra
+          </div>
+        </div>
+        <div style="text-align:right">
+          <div class="inv-title">${type.toUpperCase()}</div>
+          <div style="font-size:11px;opacity:0.85;margin-top:6px">
+            <div>Bill No: <b>${no||'—'}</b></div>
+            <div>Date: <b>${fmtDate(date)}</b></div>
+            ${due?`<div>Due: <b>${fmtDate(due)}</b></div>`:''}
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="inv-body">
+      <div class="inv-parties">
+        <div class="inv-party-box">
+          <div class="inv-party-label">Bill To</div>
+          <div class="inv-party-name">${custName||'—'}</div>
+          <div class="inv-party-detail">
+            ${custContact?custContact+'<br>':''}
+            ${custPhone?'📞 '+custPhone+'<br>':''}
+            ${custAddress?custAddress+'<br>':''}
+            ${custCity?custCity+'<br>':''}
+            ${custGst?'GSTIN: '+custGst:''}
+          </div>
+        </div>
+        <div class="inv-party-box">
+          <div class="inv-party-label">Payment Info</div>
+          <div class="inv-party-detail" style="line-height:1.8">
+            <b>Terms:</b> ${terms||'—'}<br>
+            <b>Mode:</b> ${paymode||'—'}<br>
+            ${due?`<b>Due Date:</b> ${fmtDate(due)}`:''}
+          </div>
+        </div>
+      </div>
+      <table class="inv-table">
+        <thead>
+          <tr>
+            <th>#</th><th>Product</th><th>HSN</th><th>Qty</th>
+            <th>Rate (₹)</th><th>GST%</th><th>GST Amt</th><th>Amount (₹)</th>
+          </tr>
+        </thead>
+        <tbody>${itemRows||'<tr><td colspan="8" style="text-align:center;color:#999;padding:20px">No items added</td></tr>'}</tbody>
+      </table>
+      <div class="inv-totals">
+        <div class="inv-totals-box">
+          <div class="inv-total-row"><span>Subtotal</span><span>₹${fmt(subtotal)}</span></div>
+          <div class="inv-total-row"><span>GST</span><span>₹${fmt(totalGst)}</span></div>
+          ${discount>0?`<div class="inv-total-row"><span>Discount</span><span style="color:#e53e3e">-₹${fmt(discount)}</span></div>`:''}
+          ${shipping>0?`<div class="inv-total-row"><span>Shipping</span><span>₹${fmt(shipping)}</span></div>`:''}
+          <div class="inv-total-row grand"><span>Grand Total</span><span>₹${fmt(grand)}</span></div>
+        </div>
+      </div>
+      <div style="font-size:10px;color:#555;margin-top:8px;font-style:italic">Amount in Words: <b>${inWords}</b></div>
+      ${notes?`<div style="margin-top:10px;font-size:10px;color:#555;border-top:1px solid #eee;padding-top:8px"><b>Notes:</b> ${notes}</div>`:''}
+      <div style="margin-top:14px;display:flex;justify-content:flex-end">
+        <div style="text-align:center">
+          <div style="width:140px;border-top:1px solid #333;padding-top:4px;font-size:10px;color:#555">Authorized Signature</div>
+        </div>
+      </div>
+    </div>
+    <div class="inv-footer">
+      This is a computer generated invoice. Thank you for your business! &nbsp;|&nbsp; Chaturthi Surgicals, Palghar
+    </div>
+  </div>`;
+}
+
+function updatePreview() {
+  const container = document.getElementById('bill-preview-container');
+  if (!container) return;
+  const data = getBillData();
+  container.innerHTML = buildInvoiceHTML(data);
+  // Scale preview to fit panel
+  const inv = container.querySelector('#invoice-render');
+  if (inv) {
+    const panelW = container.offsetWidth || 360;
+    const invW = inv.scrollWidth || 760;
+    const scale = Math.min(1, (panelW) / invW);
+    inv.style.transform = `scale(${scale})`;
+    inv.style.transformOrigin = 'top left';
+    container.style.height = (inv.scrollHeight * scale + 10) + 'px';
+  }
+}
+
+function resetBill() {
+  billItems = [];
+  addBillItem();
+  ['bill-cust-name','bill-cust-contact','bill-cust-phone','bill-cust-address','bill-cust-gst','bill-cust-city','bill-notes'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.value='';
+  });
+  document.getElementById('bill-discount').value = '0';
+  document.getElementById('bill-shipping').value = '0';
+  updatePreview();
+}
+
+function autoFillFromLastSale() {
+  if (!DB.sales.length) { showToast('No sales to auto-fill from','⚠️'); return; }
+  const last = [...DB.sales].sort((a,b)=>b.date.localeCompare(a.date))[0];
+  document.getElementById('bill-cust-name').value = last.party;
+  onBillPartySelect();
+  billItems = [];
+  // Group all sales to same party on same date
+  const related = DB.sales.filter(s=>s.party===last.party && s.date===last.date);
+  related.forEach(s => {
+    const prod = DB.products.find(p=>p.name===s.product)||{};
+    billItems.push({ id:'bi_'+uid(), productName:s.product, hsn:prod.hsn||'', qty:s.qty, unit:s.unit||'Piece', rate:s.rate, gst:s.gst||18 });
+  });
+  if (!billItems.length) billItems.push({ id:'bi_'+uid(), productName:last.product, hsn:'', qty:last.qty, unit:last.unit||'Piece', rate:last.rate, gst:last.gst||18 });
+  renderBillItemsTable();
+  updatePreview();
+  showToast('Auto-filled from last sale!');
+}
+
+function saveBillRecord() {
+  const data = getBillData();
+  if (!data.custName) { showToast('Add customer name first','⚠️'); return; }
+  data.savedAt = new Date().toISOString();
+  savedBills.unshift(data);
+  if (savedBills.length > 100) savedBills.pop();
+  localStorage.setItem('chaturthi_bill_counter', billCounter);
+  saveBills();
+  renderBillHistory();
+  showToast('Bill saved to records!','💾');
+}
+
+function renderBillHistory() {
+  const list = document.getElementById('bill-history-list');
+  const countEl = document.getElementById('bill-count');
+  if (!list) return;
+  if (countEl) countEl.textContent = savedBills.length + ' bills';
+  if (!savedBills.length) {
+    list.innerHTML = '<div style="padding:16px;text-align:center;font-size:12px;color:var(--text3)">No bills saved yet</div>';
+    return;
+  }
+  list.innerHTML = savedBills.slice(0,10).map(b => `
+    <div class="bill-history-row">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:500;color:var(--text)">${b.no} — ${b.custName}</div>
+        <div style="font-size:10px;color:var(--text3)">${fmtDate(b.date)} · ₹${fmt(b.grand)}</div>
+      </div>
+      <span class="tag tag-ok" style="font-size:9px">₹${fmt(b.grand)}</span>
+    </div>`).join('');
+}
+
+function downloadBillPDF() {
+  const data = getBillData();
+  if (!data.custName) { showToast('Add customer name first','⚠️'); return; }
+  const invoiceHTML = buildInvoiceHTML(data, true);
+  const style = `<style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap');
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family: Arial, sans-serif; background: white; }
+    .invoice-preview { width: 760px; margin: 0 auto; }
+    .inv-header { background: linear-gradient(135deg,#0a3d2e,#0d5c45); color:white; padding:20px 24px 16px; }
+    .inv-company { font-size:22px; font-weight:700; }
+    .inv-tagline { font-size:10px; opacity:0.7; margin-top:2px; letter-spacing:0.08em; text-transform:uppercase; }
+    .inv-title { font-size:14px; font-weight:700; letter-spacing:0.05em; }
+    .inv-body { padding:16px 24px; }
+    .inv-parties { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:14px; }
+    .inv-party-box { background:#f8fafb; border-radius:6px; padding:10px 12px; }
+    .inv-party-label { font-size:9px; text-transform:uppercase; letter-spacing:0.1em; color:#666; margin-bottom:4px; }
+    .inv-party-name { font-size:13px; font-weight:700; }
+    .inv-party-detail { font-size:10px; color:#555; line-height:1.6; margin-top:2px; }
+    .inv-table { width:100%; border-collapse:collapse; font-size:11px; }
+    .inv-table th { background:#0a3d2e; color:white; padding:7px 10px; text-align:left; font-size:10px; text-transform:uppercase; }
+    .inv-table td { padding:7px 10px; border-bottom:1px solid #e5e7eb; }
+    .inv-table tr:nth-child(even) td { background:#f8fafb; }
+    .inv-totals { display:flex; justify-content:flex-end; margin-top:12px; }
+    .inv-totals-box { min-width:200px; }
+    .inv-total-row { display:flex; justify-content:space-between; padding:4px 0; font-size:11px; color:#444; border-bottom:1px solid #eee; }
+    .inv-total-row.grand { font-weight:700; font-size:14px; color:#0a3d2e; border-bottom:none; padding-top:8px; }
+    .inv-footer { background:#f8fafb; border-top:1px solid #e5e7eb; padding:10px 20px; font-size:9px; color:#888; text-align:center; }
+    @media print { body { margin:0; } }
+  </style>`;
+  const win = window.open('', '_blank');
+  win.document.write(`<!DOCTYPE html><html><head><title>Bill ${data.no}</title>${style}</head><body>${invoiceHTML}<script>window.onload=()=>{window.print();}<\/script></body></html>`);
+  win.document.close();
+  showToast('Bill opened for download/print!', '🖨');
+}
+
+function printBill() { downloadBillPDF(); }
+
+// ── WhatsApp Integration ──────────────────────────────────────
+const WA_PORT = 9847;
+const WA_BASE = `http://127.0.0.1:${WA_PORT}`;
+let waPolling = null;
+
+async function waAPI(path, method='GET', body=null) {
+  try {
+    const opts = { method, headers:{'Content-Type':'application/json'} };
+    if (body) opts.body = JSON.stringify(body);
+    const res = await fetch(WA_BASE + path, opts);
+    return await res.json();
+  } catch(e) {
+    return { ok: false, error: 'Server not running. Please restart the app.' };
+  }
+}
+
+async function waCheckStatus() {
+  const data = await waAPI('/status');
+  const dot = document.getElementById('wa-dot');
+  const statusText = document.getElementById('wa-status-text');
+  const qrSection = document.getElementById('wa-qr-section');
+  const connInfo = document.getElementById('wa-connected-info');
+  const connectBtn = document.getElementById('wa-connect-btn');
+  const disconnectBtn = document.getElementById('wa-disconnect-btn');
+  const sendBtn = document.getElementById('wa-send-btn');
+  if (!dot) return;
+
+  if (data.status === 'connected') {
+    dot.className = 'wa-status-dot connected';
+    statusText.textContent = 'Connected';
+    statusText.style.color = 'var(--green)';
+    qrSection.style.display = 'none';
+    connInfo.style.display = 'block';
+    document.getElementById('wa-phone-display').textContent = '+' + (data.phone||'Unknown');
+    connectBtn.style.display = 'none';
+    disconnectBtn.style.display = '';
+    sendBtn.disabled = false;
+    clearInterval(waPolling);
+  } else if (data.status === 'qr') {
+    dot.className = 'wa-status-dot qr';
+    statusText.textContent = 'Scan QR Code';
+    statusText.style.color = 'var(--sell)';
+    qrSection.style.display = 'block';
+    if (data.qr) document.getElementById('wa-qr-img').src = data.qr;
+    connInfo.style.display = 'none';
+    sendBtn.disabled = true;
+  } else {
+    dot.className = 'wa-status-dot disconnected';
+    statusText.textContent = 'Disconnected';
+    statusText.style.color = 'var(--text3)';
+    qrSection.style.display = 'none';
+    connInfo.style.display = 'none';
+    connectBtn.style.display = '';
+    disconnectBtn.style.display = 'none';
+    sendBtn.disabled = true;
+  }
+}
+
+async function waConnect() {
+  showToast('Connecting to WhatsApp...', '📱');
+  const res = await waAPI('/connect', 'POST');
+  if (res.ok) {
+    clearInterval(waPolling);
+    waPolling = setInterval(waCheckStatus, 2000);
+    showToast('Scan the QR code with your phone', '📷');
+  } else {
+    showToast('Error: ' + (res.error || 'Could not connect'), '❌');
+  }
+}
+
+async function waDisconnect() {
+  if (!confirm('Logout from WhatsApp? You will need to scan QR again.')) return;
+  await waAPI('/disconnect', 'POST');
+  clearInterval(waPolling);
+  waCheckStatus();
+  showToast('WhatsApp logged out', '📵');
+}
+
+async function sendBillViaWhatsApp() {
+  const data = getBillData();
+  if (!data.custName) { showToast('Add customer name first','⚠️'); return; }
+  const phone = data.custPhone;
+  if (!phone || phone.replace(/\D/g,'').length < 10) {
+    showToast('Please enter a valid 10-digit phone number','⚠️'); return;
+  }
+
+  // Render invoice to canvas via html2canvas approach using iframe
+  showToast('Preparing bill image...','⏳');
+
+  // Build full invoice in a hidden iframe, then use print/screenshot approach
+  // Since html2canvas is not available, we send a text summary + notify user
+  const textBill = `*Chaturthi Surgicals*\n_Wholesale Surgical Instruments_\n\n` +
+    `📋 *${data.type}*\n` +
+    `Bill No: *${data.no}*\n` +
+    `Date: ${fmtDate(data.date)}\n\n` +
+    `*Bill To:*\n${data.custName}\n${data.custCity||''}\n\n` +
+    `*Items:*\n` +
+    data.items.filter(i=>i.productName).map((i,idx) =>
+      `${idx+1}. ${i.productName} — ${i.qty} ${i.unit} × ₹${fmt(i.rate)} = ₹${fmt(i.qty*i.rate*(1+i.gst/100))}`
+    ).join('\n') +
+    `\n\n💰 *Grand Total: ₹${fmt(data.grand)}*\n` +
+    `_(incl. GST ₹${fmt(data.totalGst)})_\n\n` +
+    `Payment: ${data.paymode} | Terms: ${data.terms}\n` +
+    `Thank you for your business! 🙏`;
+
+  const res = await waAPI('/send-text', 'POST', { phone, message: textBill });
+  if (res.ok) {
+    showToast(`Bill sent to ${phone} via WhatsApp! ✅`, '📲');
+    saveBillRecord();
+  } else {
+    showToast('Failed: ' + (res.error||'Unknown error'), '❌');
+  }
+}
+
+// ── Override navigate to init billing page ───────────────────
+const _origNavigate = navigate;
+// Patch navigate to call billing init
+const _navPatched = function(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const el = document.getElementById('page-' + page);
+  if (el) el.classList.add('active');
+  const items = document.querySelectorAll('.nav-item');
+  items.forEach(i => {
+    const t = i.textContent.trim().toLowerCase();
+    if (
+      (page==='dashboard'&&t.includes('dashboard'))||
+      (page==='purchases'&&t.includes('purchase'))||
+      (page==='sales'&&t.includes('sales'))||
+      (page==='inventory'&&t.includes('inventory'))||
+      (page==='parties'&&t.includes('part'))||
+      (page==='products'&&t.includes('product'))||
+      (page==='reports'&&t.includes('report'))||
+      (page==='export'&&t.includes('export'))||
+      (page==='billing'&&t.includes('bill'))
+    ) i.classList.add('active');
+  });
+  if (page==='dashboard') renderDashboard();
+  if (page==='purchases') { renderPurchases(); populateMonthFilter('purchase'); }
+  if (page==='sales') { renderSales(); populateMonthFilter('sale'); }
+  if (page==='inventory') renderInventory();
+  if (page==='parties') renderParties();
+  if (page==='products') renderProducts();
+  if (page==='reports') renderReports();
+  if (page==='billing') initBillingPage();
+};
+// Replace global navigate
+window.navigate = _navPatched;
+
+</script>
+</body>
+</html>
