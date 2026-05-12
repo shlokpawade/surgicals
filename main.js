@@ -1,8 +1,99 @@
 const { app, BrowserWindow, Menu, dialog, shell, ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const QRCode = require('qrcode');
+const { default: makeWASocket, DisconnectReason, useMultiFileAuthState } = require('@whiskeysockets/baileys');
 
 let mainWindow;
+let waSocket;
+let waInitPromise = null;
+const waStatus = {
+  connected: false,
+  connecting: false,
+  qr: '',
+  phone: '',
+  provider: 'baileys',
+  enabled: true,
+  error: ''
+};
+
+function authDir() {
+  return path.join(app.getPath('userData'), 'wa-auth-state');
+}
+
+function emitWAStatus() {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  mainWindow.webContents.send('whatsapp:status', waStatus);
+}
+
+function updateWAStatus(nextState) {
+  Object.assign(waStatus, nextState);
+  emitWAStatus();
+}
+
+function parseDisconnectCode(lastDisconnect) {
+  if (!lastDisconnect || !lastDisconnect.error) return undefined;
+  return lastDisconnect.error?.output?.statusCode || lastDisconnect.error?.statusCode;
+}
+
+async function startWhatsApp() {
+  if (waInitPromise) return waInitPromise;
+  waInitPromise = (async () => {
+    const { state, saveCreds } = await useMultiFileAuthState(authDir());
+    updateWAStatus({ connecting: true, error: '', qr: '', connected: false, phone: '' });
+    const socket = makeWASocket({
+      auth: state,
+      printQRInTerminal: false,
+      browser: ['Chaturthi Surgicals', 'Desktop', '1.0.0']
+    });
+    waSocket = socket;
+
+    socket.ev.on('creds.update', saveCreds);
+    socket.ev.on('connection.update', async (update) => {
+      const { connection, qr, lastDisconnect } = update;
+      if (qr) {
+        try {
+          const qrDataUrl = await QRCode.toDataURL(qr);
+          updateWAStatus({ qr: qrDataUrl, connecting: true, connected: false, error: '' });
+        } catch (err) {
+          updateWAStatus({ error: `QR generation failed: ${err.message || 'unknown error'}` });
+        }
+      }
+
+      if (connection === 'open') {
+        const rawId = socket.user?.id || '';
+        const phone = rawId.split(':')[0].replace(/\D/g, '');
+        updateWAStatus({ connected: true, connecting: false, qr: '', phone, error: '' });
+      }
+
+      if (connection === 'close') {
+        const code = parseDisconnectCode(lastDisconnect);
+        const loggedOut = code === DisconnectReason.loggedOut;
+        updateWAStatus({
+          connected: false,
+          connecting: !loggedOut,
+          qr: '',
+          phone: '',
+          error: loggedOut ? 'Logged out. Please reconnect by scanning QR again.' : ''
+        });
+        waSocket = undefined;
+        waInitPromise = null;
+        if (!loggedOut) {
+          setTimeout(() => startWhatsApp().catch(() => {}), 1500);
+        }
+      }
+    });
+  })();
+  return waInitPromise;
+}
+
+async function clearAuthState() {
+  try {
+    fs.rmSync(authDir(), { recursive: true, force: true });
+  } catch (err) {
+    // No-op: auth cleanup failures are non-fatal
+  }
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -81,6 +172,50 @@ function createWindow() {
 }
 
 app.whenReady().then(createWindow);
+
+ipcMain.handle('whatsapp:get-status', async () => waStatus);
+
+ipcMain.handle('whatsapp:connect', async () => {
+  await startWhatsApp();
+  return waStatus;
+});
+
+ipcMain.handle('whatsapp:disconnect', async () => {
+  if (waSocket) {
+    try {
+      await waSocket.logout();
+    } catch (err) {
+      // Continue with local cleanup even if remote logout fails
+    }
+    try {
+      waSocket.end(new Error('Manual logout'));
+    } catch (err) {
+      // Ignore socket end errors
+    }
+  }
+  waSocket = undefined;
+  waInitPromise = null;
+  await clearAuthState();
+  updateWAStatus({ connected: false, connecting: false, qr: '', phone: '', error: '' });
+  return waStatus;
+});
+
+ipcMain.handle('whatsapp:send-bill', async (_event, payload = {}) => {
+  const phone = String(payload.phone || '').replace(/\D/g, '');
+  const message = String(payload.message || '');
+  if (!waStatus.connected || !waSocket) {
+    throw new Error('WhatsApp is not connected. Please connect first.');
+  }
+  if (!phone || phone.length < 10) {
+    throw new Error('Invalid customer phone number.');
+  }
+  if (!message.trim()) {
+    throw new Error('Bill message is empty.');
+  }
+  const jid = `${phone}@s.whatsapp.net`;
+  await waSocket.sendMessage(jid, { text: message });
+  return { ok: true };
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
