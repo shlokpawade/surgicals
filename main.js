@@ -2,11 +2,12 @@ const { app, BrowserWindow, Menu, dialog, shell, ipcMain } = require('electron')
 const path = require('path');
 const fs = require('fs');
 const QRCode = require('qrcode');
-const { default: makeWASocket, DisconnectReason, useMultiFileAuthState } = require('@whiskeysockets/baileys');
 
 let mainWindow;
 let waSocket;
 let waInitPromise = null;
+let baileysModulePromise = null;
+let reconnectTimer = null;
 const waStatus = {
   connected: false,
   connecting: false,
@@ -31,6 +32,44 @@ function updateWAStatus(nextState) {
   emitWAStatus();
 }
 
+function logWAError(context, error) {
+  console.error(`[WhatsApp] ${context}`, error);
+}
+
+async function loadBaileys() {
+  if (!baileysModulePromise) {
+    baileysModulePromise = import('@whiskeysockets/baileys').then((module) => {
+      const makeWASocket = module.default || module.makeWASocket;
+      const { DisconnectReason, useMultiFileAuthState } = module;
+      if (!makeWASocket || !DisconnectReason || !useMultiFileAuthState) {
+        throw new Error('Baileys module did not provide required exports.');
+      }
+      return { makeWASocket, DisconnectReason, useMultiFileAuthState };
+    }).catch((err) => {
+      baileysModulePromise = null;
+      throw err;
+    });
+  }
+  return baileysModulePromise;
+}
+
+function clearReconnectTimer() {
+  if (reconnectTimer) {
+    clearTimeout(reconnectTimer);
+    reconnectTimer = null;
+  }
+}
+
+function scheduleReconnect() {
+  clearReconnectTimer();
+  reconnectTimer = setTimeout(() => {
+    startWhatsApp().catch((err) => {
+      logWAError('Reconnect failed', err);
+      updateWAStatus({ connecting: false, error: 'Reconnect failed. Please try connecting again.' });
+    });
+  }, 1500);
+}
+
 function parseDisconnectCode(lastDisconnect) {
   if (!lastDisconnect || !lastDisconnect.error) return undefined;
   return lastDisconnect.error?.output?.statusCode || lastDisconnect.error?.statusCode;
@@ -39,54 +78,81 @@ function parseDisconnectCode(lastDisconnect) {
 async function startWhatsApp() {
   if (waInitPromise) return waInitPromise;
   waInitPromise = (async () => {
-    const { state, saveCreds } = await useMultiFileAuthState(authDir());
     updateWAStatus({ connecting: true, error: '', qr: '', connected: false, phone: '' });
-    const socket = makeWASocket({
-      auth: state,
-      printQRInTerminal: false,
-      browser: ['Chaturthi Surgicals', 'Desktop', '1.0.0']
-    });
-    waSocket = socket;
+    try {
+      const { makeWASocket, DisconnectReason, useMultiFileAuthState } = await loadBaileys();
+      const { state, saveCreds } = await useMultiFileAuthState(authDir());
+      const socket = makeWASocket({
+        auth: state,
+        printQRInTerminal: false,
+        browser: ['Chaturthi Surgicals', 'Desktop', '1.0.0']
+      });
+      waSocket = socket;
 
-    socket.ev.on('creds.update', saveCreds);
-    socket.ev.on('connection.update', async (update) => {
-      const { connection, qr, lastDisconnect } = update;
-      if (qr) {
+      socket.ev.on('creds.update', async () => {
         try {
-          const qrDataUrl = await QRCode.toDataURL(qr);
-          updateWAStatus({ qr: qrDataUrl, connecting: true, connected: false, error: '' });
+          await saveCreds();
         } catch (err) {
-          updateWAStatus({ error: `QR generation failed: ${err.message || 'unknown error'}` });
+          logWAError('Failed to persist WhatsApp session', err);
         }
-      }
+      });
+      socket.ev.on('connection.update', async (update) => {
+        try {
+          const { connection, qr, lastDisconnect } = update;
+          if (qr) {
+            try {
+              const qrDataUrl = await QRCode.toDataURL(qr);
+              updateWAStatus({ qr: qrDataUrl, connecting: true, connected: false, error: '' });
+            } catch (err) {
+              logWAError('QR generation failed', err);
+              updateWAStatus({ error: 'QR generation failed. Please retry WhatsApp connect.' });
+            }
+          }
 
-      if (connection === 'open') {
-        const rawId = socket.user?.id || '';
-        const phone = rawId.split(':')[0].replace(/\D/g, '');
-        updateWAStatus({ connected: true, connecting: false, qr: '', phone, error: '' });
-      }
+          if (connection === 'open') {
+            clearReconnectTimer();
+            const rawId = socket.user?.id || '';
+            const phone = rawId.split(':')[0].replace(/\D/g, '');
+            updateWAStatus({ connected: true, connecting: false, qr: '', phone, error: '' });
+          }
 
-      if (connection === 'close') {
-        const code = parseDisconnectCode(lastDisconnect);
-        const loggedOut = code === DisconnectReason.loggedOut;
-        updateWAStatus({
-          connected: false,
-          connecting: !loggedOut,
-          qr: '',
-          phone: '',
-          error: loggedOut ? 'Logged out. Please reconnect by scanning QR again.' : ''
-        });
-        waSocket = undefined;
-        waInitPromise = null;
-        if (!loggedOut) {
-          setTimeout(() => {
-            startWhatsApp().catch((err) => {
-              updateWAStatus({ connecting: false, error: `Reconnect failed: ${err.message || 'unknown error'}` });
+          if (connection === 'close') {
+            const code = parseDisconnectCode(lastDisconnect);
+            const loggedOut = code === DisconnectReason.loggedOut;
+            if (!loggedOut) {
+              logWAError(`Connection closed (code: ${code ?? 'unknown'})`, lastDisconnect?.error);
+            }
+            updateWAStatus({
+              connected: false,
+              connecting: !loggedOut,
+              qr: '',
+              phone: '',
+              error: loggedOut ? 'Logged out. Please reconnect by scanning QR again.' : 'Connection lost. Reconnecting...'
             });
-          }, 1500);
+            waSocket = undefined;
+            waInitPromise = null;
+            if (!loggedOut) {
+              scheduleReconnect();
+            }
+          }
+        } catch (err) {
+          logWAError('Unhandled connection update error', err);
+          updateWAStatus({ error: 'WhatsApp connection update failed. Please reconnect.' });
         }
-      }
-    });
+      });
+    } catch (err) {
+      waSocket = undefined;
+      waInitPromise = null;
+      logWAError('Initialization failed', err);
+      updateWAStatus({
+        connected: false,
+        connecting: false,
+        qr: '',
+        phone: '',
+        error: 'WhatsApp initialization failed. Please restart connect.'
+      });
+      throw err;
+    }
   })();
   return waInitPromise;
 }
@@ -180,21 +246,27 @@ app.whenReady().then(createWindow);
 ipcMain.handle('whatsapp:get-status', async () => waStatus);
 
 ipcMain.handle('whatsapp:connect', async () => {
-  await startWhatsApp();
-  return waStatus;
+  try {
+    await startWhatsApp();
+    return waStatus;
+  } catch (err) {
+    logWAError('Connect request failed', err);
+    throw new Error('Unable to connect WhatsApp right now. Please try again.');
+  }
 });
 
 ipcMain.handle('whatsapp:disconnect', async () => {
+  clearReconnectTimer();
   if (waSocket) {
     try {
       await waSocket.logout();
     } catch (err) {
-      // Continue with local cleanup even if remote logout fails
+      logWAError('Logout warning', err);
     }
     try {
       waSocket.end(new Error('User initiated disconnect'));
     } catch (err) {
-      // Ignore socket end errors
+      logWAError('Socket end warning', err);
     }
   }
   waSocket = undefined;
@@ -220,8 +292,13 @@ ipcMain.handle('whatsapp:send-bill', async (_event, payload = {}) => {
     throw new Error('Bill message is empty.');
   }
   const jid = `${phone}@s.whatsapp.net`;
-  await waSocket.sendMessage(jid, { text: message });
-  return { ok: true };
+  try {
+    await waSocket.sendMessage(jid, { text: message });
+    return { ok: true };
+  } catch (err) {
+    logWAError('Message send failed', err);
+    throw new Error('Failed to send WhatsApp message. Please retry.');
+  }
 });
 
 app.on('window-all-closed', () => {
