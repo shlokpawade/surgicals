@@ -1171,7 +1171,7 @@
     <div class="page" id="page-billing">
       <div class="page-header">
         <div class="page-title">Generate Bill</div>
-        <div class="page-sub">Create professional invoices and send via WhatsApp</div>
+        <div class="page-sub">Create professional invoices and send PDF via WhatsApp or Gmail</div>
       </div>
 
       <div class="billing-layout">
@@ -1235,6 +1235,10 @@
               <div class="form-group">
                 <label class="form-label">Phone (for WhatsApp)</label>
                 <input type="text" class="form-input" id="bill-cust-phone" placeholder="10-digit mobile number" oninput="updatePreview()">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Email (for Gmail)</label>
+                <input type="email" class="form-input" id="bill-cust-email" placeholder="customer@email.com">
               </div>
               <div class="form-group full">
                 <label class="form-label">Address</label>
@@ -1323,10 +1327,22 @@
         <!-- RIGHT: Preview + WhatsApp -->
         <div class="bill-preview-panel">
 
-          <!-- WhatsApp Panel -->
+          <!-- Delivery Panel -->
           <div class="wa-panel">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
               <div style="font-size:12px;font-weight:600">
+                Bill Delivery
+              </div>
+            </div>
+            <div class="form-group" style="margin-bottom:10px">
+              <label class="form-label" for="bill-send-channel">Send via</label>
+              <select class="form-select" id="bill-send-channel" onchange="onBillSendChannelChange()">
+                <option value="whatsapp">WhatsApp (PDF)</option>
+                <option value="gmail">Gmail (PDF)</option>
+              </select>
+            </div>
+            <div id="wa-controls-wrap">
+              <div style="font-size:12px;font-weight:600;margin-bottom:10px">
                 <span class="wa-status-dot disconnected" id="wa-dot"></span>
                 WhatsApp <span id="wa-status-text" style="color:var(--text3)">Disconnected</span>
               </div>
@@ -1334,18 +1350,29 @@
                 <button class="btn btn-secondary" style="padding:4px 10px;font-size:11px" id="wa-connect-btn" onclick="waConnect()">Connect WhatsApp</button>
                 <button class="btn btn-danger" style="padding:4px 10px;font-size:11px;display:none" id="wa-disconnect-btn" onclick="waDisconnect()">Logout</button>
               </div>
+              <div id="wa-qr-section" style="display:none;margin-top:10px">
+                <div style="font-size:11px;color:var(--text3);margin-bottom:8px">📱 Scan this QR code with WhatsApp on your phone:<br><span style="font-size:10px">WhatsApp → ⋮ Menu → Linked Devices → Link a Device</span></div>
+                <div class="wa-qr-wrap"><img id="wa-qr-img" src="" alt="QR Code"></div>
+              </div>
+              <div id="wa-connected-info" style="display:none;font-size:11px;color:var(--green);margin-top:8px">
+                ✅ Connected as: <span id="wa-phone-display"></span>
+              </div>
+              <div style="margin-top:6px;font-size:10px;color:var(--text3)">Provider: <b>Baileys</b> • Enabled: <b>ON</b></div>
             </div>
-            <div id="wa-qr-section" style="display:none">
-              <div style="font-size:11px;color:var(--text3);margin-bottom:8px">📱 Scan this QR code with WhatsApp on your phone:<br><span style="font-size:10px">WhatsApp → ⋮ Menu → Linked Devices → Link a Device</span></div>
-              <div class="wa-qr-wrap"><img id="wa-qr-img" src="" alt="QR Code"></div>
+            <div id="gmail-settings-wrap" style="display:none;margin-top:10px">
+              <div class="form-group">
+                <label class="form-label">Your Gmail address</label>
+                <input type="email" class="form-input" id="gmail-sender-email" placeholder="yourgmail@gmail.com" oninput="saveBillingCommInfo()">
+              </div>
+              <div class="form-group" style="margin-top:8px">
+                <label class="form-label">Gmail App Password</label>
+                <input type="password" class="form-input" id="gmail-app-password" placeholder="16-character app password" oninput="saveBillingCommInfo()">
+              </div>
+              <div style="margin-top:8px;font-size:10px;color:var(--text3)">Use Gmail App Password (not your normal password); for security, this password is not saved.</div>
             </div>
-            <div id="wa-connected-info" style="display:none;font-size:11px;color:var(--green)">
-              ✅ Connected as: <span id="wa-phone-display"></span>
-            </div>
-            <div style="margin-top:6px;font-size:10px;color:var(--text3)">Provider: <b>Baileys</b> • Enabled: <b>ON</b></div>
             <div style="margin-top:10px">
-              <button class="btn btn-whatsapp" style="width:100%;justify-content:center" id="wa-send-btn" onclick="sendBillViaWhatsApp()" disabled>
-                📲 Send Bill via WhatsApp
+              <button class="btn btn-whatsapp" style="width:100%;justify-content:center" id="wa-send-btn" onclick="sendBillToCustomer()" disabled>
+                📲 Send Bill PDF
               </button>
             </div>
           </div>
@@ -2249,6 +2276,8 @@ renderDashboard();
 let billItems = [];
 let billCounter = parseInt(localStorage.getItem('chaturthi_bill_counter') || '0');
 let savedBills = JSON.parse(localStorage.getItem('chaturthi_bills') || '[]');
+const BILL_CHANNEL_WHATSAPP = 'whatsapp';
+const BILL_CHANNEL_GMAIL = 'gmail';
 
 function saveBills() {
   localStorage.setItem('chaturthi_bills', JSON.stringify(savedBills));
@@ -2257,6 +2286,36 @@ function saveBills() {
 function saveBillingBusinessInfo() {
   localStorage.setItem('chaturthi_bill_my_gst', document.getElementById('bill-my-gst')?.value || '');
   localStorage.setItem('chaturthi_bill_my_drug_lic', document.getElementById('bill-my-drug-lic')?.value || '');
+}
+
+function saveBillingCommInfo() {
+  localStorage.setItem('chaturthi_bill_send_channel', document.getElementById('bill-send-channel')?.value || BILL_CHANNEL_WHATSAPP);
+  localStorage.setItem('chaturthi_bill_gmail_sender', document.getElementById('gmail-sender-email')?.value || '');
+}
+
+function getSelectedBillSendChannel() {
+  return document.getElementById('bill-send-channel')?.value || BILL_CHANNEL_WHATSAPP;
+}
+
+function onBillSendChannelChange() {
+  saveBillingCommInfo();
+  updateBillDeliveryUI();
+}
+
+function updateBillDeliveryUI() {
+  const channel = getSelectedBillSendChannel();
+  const waWrap = document.getElementById('wa-controls-wrap');
+  const gmailWrap = document.getElementById('gmail-settings-wrap');
+  const sendBtn = document.getElementById('wa-send-btn');
+  if (waWrap) waWrap.style.display = channel === BILL_CHANNEL_WHATSAPP ? '' : 'none';
+  if (gmailWrap) gmailWrap.style.display = channel === BILL_CHANNEL_GMAIL ? '' : 'none';
+  if (sendBtn) {
+    sendBtn.textContent = channel === BILL_CHANNEL_GMAIL ? '📧 Send Bill PDF via Gmail' : '📲 Send Bill PDF via WhatsApp';
+    sendBtn.disabled = false;
+  }
+  if (channel === BILL_CHANNEL_WHATSAPP) {
+    waCheckStatus();
+  }
 }
 
 function initBillingPage() {
@@ -2271,6 +2330,9 @@ function initBillingPage() {
   document.getElementById('bill-no').value = `CS-${yr}${mo}-${String(billCounter).padStart(3,'0')}`;
   document.getElementById('bill-my-gst').value = localStorage.getItem('chaturthi_bill_my_gst') || '';
   document.getElementById('bill-my-drug-lic').value = localStorage.getItem('chaturthi_bill_my_drug_lic') || '';
+  document.getElementById('bill-send-channel').value = localStorage.getItem('chaturthi_bill_send_channel') || BILL_CHANNEL_WHATSAPP;
+  document.getElementById('gmail-sender-email').value = localStorage.getItem('chaturthi_bill_gmail_sender') || '';
+  document.getElementById('gmail-app-password').value = '';
 
   // Populate party datalist
   const dl = document.getElementById('bill-party-list');
@@ -2282,7 +2344,7 @@ function initBillingPage() {
   if (billItems.length === 0) addBillItem();
   updatePreview();
   renderBillHistory();
-  waCheckStatus();
+  updateBillDeliveryUI();
 }
 
 function onBillPartySelect() {
@@ -2290,6 +2352,7 @@ function onBillPartySelect() {
   const party = DB.parties.find(p => p.name === name);
   if (party) {
     if (party.phone) document.getElementById('bill-cust-phone').value = party.phone;
+    if (party.email) document.getElementById('bill-cust-email').value = party.email;
     if (party.address) document.getElementById('bill-cust-address').value = party.address;
     if (party.gst) document.getElementById('bill-cust-gst').value = party.gst;
     if (party.city) document.getElementById('bill-cust-city').value = party.city;
@@ -2377,6 +2440,7 @@ function getBillData() {
     custName: document.getElementById('bill-cust-name')?.value || '',
     custContact: document.getElementById('bill-cust-contact')?.value || '',
     custPhone: document.getElementById('bill-cust-phone')?.value || '',
+    custEmail: document.getElementById('bill-cust-email')?.value || '',
     custAddress: document.getElementById('bill-cust-address')?.value || '',
     custGst: document.getElementById('bill-cust-gst')?.value || '',
     custCity: document.getElementById('bill-cust-city')?.value || '',
@@ -2519,7 +2583,7 @@ function updatePreview() {
 function resetBill() {
   billItems = [];
   addBillItem();
-  ['bill-cust-name','bill-cust-contact','bill-cust-phone','bill-cust-address','bill-cust-gst','bill-cust-city','bill-notes'].forEach(id => {
+  ['bill-cust-name','bill-cust-contact','bill-cust-phone','bill-cust-email','bill-cust-address','bill-cust-gst','bill-cust-city','bill-notes'].forEach(id => {
     const el = document.getElementById(id); if(el) el.value='';
   });
   document.getElementById('bill-discount').value = '0';
@@ -2576,11 +2640,8 @@ function renderBillHistory() {
     </div>`).join('');
 }
 
-function downloadBillPDF() {
-  const data = getBillData();
-  if (!data.custName) { showToast('Add customer name first','⚠️'); return; }
-  const invoiceHTML = buildInvoiceHTML(data, true);
-  const style = `<style>
+function invoicePDFStyle() {
+  return `<style>
     @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap');
     * { margin:0; padding:0; box-sizing:border-box; }
     body { font-family: Arial, sans-serif; background: white; }
@@ -2606,8 +2667,67 @@ function downloadBillPDF() {
     .inv-footer { background:#f8fafb; border-top:1px solid #e5e7eb; padding:10px 20px; font-size:9px; color:#888; text-align:center; }
     @media print { body { margin:0; } }
   </style>`;
+}
+
+function buildInvoiceDocumentHTML(data) {
+  const invoiceHTML = buildInvoiceHTML(data, true);
+  return `<!DOCTYPE html><html><head><title>Bill ${data.no}</title>${invoicePDFStyle()}</head><body>${invoiceHTML}</body></html>`;
+}
+
+function downloadBase64PDF(pdfBase64, fileName) {
+  const base64 = String(pdfBase64 || '').replace(/^data:application\/pdf;base64,/, '');
+  const bytes = atob(base64);
+  const arr = new Uint8Array(bytes.length);
+  for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+  const blob = new Blob([arr], { type: 'application/pdf' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName || `bill-${Date.now()}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+async function generateBillPdfPayload(data) {
+  if (!window.electronAPI?.billGeneratePdf) {
+    throw new Error('Use desktop app to generate and send bill PDF.');
+  }
+  const res = await window.electronAPI.billGeneratePdf({
+    documentHTML: buildInvoiceDocumentHTML(data),
+    billNo: data.no
+  });
+  if (!res?.pdfBase64) {
+    throw new Error('Bill PDF could not be generated.');
+  }
+  return res;
+}
+
+function buildBillSummaryText(data) {
+  return `Bill ${data.no || ''}\nDate: ${fmtDate(data.date)}\nCustomer: ${data.custName}\nGrand Total: ₹${fmt(data.grand)}\nPlease find attached PDF bill.`;
+}
+
+function hasBasicEmailFormat(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(email || '').trim());
+}
+
+async function downloadBillPDF() {
+  const data = getBillData();
+  if (!data.custName) { showToast('Add customer name first','⚠️'); return; }
+  if (window.electronAPI?.billGeneratePdf) {
+    try {
+      showToast('Generating PDF...','⏳');
+      const pdf = await generateBillPdfPayload(data);
+      downloadBase64PDF(pdf.pdfBase64, pdf.fileName);
+      showToast('Bill PDF downloaded!', '✅');
+      return;
+    } catch (err) {
+      showToast(`PDF generation failed: ${err.message || 'unknown error'}`, '⚠️');
+    }
+  }
   const win = window.open('', '_blank');
-  win.document.write(`<!DOCTYPE html><html><head><title>Bill ${data.no}</title>${style}</head><body>${invoiceHTML}<script>window.onload=()=>{window.print();}<\/script></body></html>`);
+  win.document.write(`${buildInvoiceDocumentHTML(data)}<script>window.onload=()=>{window.print();}<\/script>`);
   win.document.close();
   showToast('Bill opened for download/print!', '🖨');
 }
@@ -2643,6 +2763,7 @@ async function waCheckStatus() {
   const connectBtn = document.getElementById('wa-connect-btn');
   const disconnectBtn = document.getElementById('wa-disconnect-btn');
   const sendBtn = document.getElementById('wa-send-btn');
+  const isWhatsAppChannel = getSelectedBillSendChannel() === BILL_CHANNEL_WHATSAPP;
   if (!dot) return;
   if (!isElectronWhatsAppAvailable()) {
     dot.className = 'wa-status-dot disconnected';
@@ -2654,7 +2775,7 @@ async function waCheckStatus() {
     connectBtn.disabled = true;
     connectBtn.textContent = 'Open Desktop App';
     disconnectBtn.style.display = 'none';
-    sendBtn.disabled = true;
+    if (isWhatsAppChannel && sendBtn) sendBtn.disabled = true;
     return;
   }
 
@@ -2678,7 +2799,7 @@ async function waCheckStatus() {
     phoneDisplay.textContent = waStatus.phone ? `+${waStatus.phone}` : '(number not available)';
     connectBtn.style.display = 'none';
     disconnectBtn.style.display = '';
-    sendBtn.disabled = false;
+    if (isWhatsAppChannel && sendBtn) sendBtn.disabled = false;
   } else if (waStatus.qr) {
     dot.className = 'wa-status-dot qr';
     statusText.textContent = 'Scan QR in app';
@@ -2688,7 +2809,7 @@ async function waCheckStatus() {
     connInfo.style.display = 'none';
     connectBtn.style.display = '';
     disconnectBtn.style.display = 'none';
-    sendBtn.disabled = true;
+    if (isWhatsAppChannel && sendBtn) sendBtn.disabled = true;
   } else if (waStatus.connecting) {
     dot.className = 'wa-status-dot qr';
     statusText.textContent = 'Connecting...';
@@ -2698,7 +2819,7 @@ async function waCheckStatus() {
     connInfo.style.display = 'none';
     connectBtn.style.display = '';
     disconnectBtn.style.display = 'none';
-    sendBtn.disabled = true;
+    if (isWhatsAppChannel && sendBtn) sendBtn.disabled = true;
   } else {
     dot.className = 'wa-status-dot disconnected';
     statusText.textContent = 'Disconnected';
@@ -2708,7 +2829,7 @@ async function waCheckStatus() {
     connInfo.style.display = 'none';
     connectBtn.style.display = '';
     disconnectBtn.style.display = 'none';
-    sendBtn.disabled = true;
+    if (isWhatsAppChannel && sendBtn) sendBtn.disabled = true;
   }
 }
 
@@ -2754,24 +2875,7 @@ async function sendBillViaWhatsApp() {
     showToast('Please enter a valid 10-digit phone number','⚠️'); return;
   }
 
-  // Render invoice to canvas via html2canvas approach using iframe
-  showToast('Preparing bill image...','⏳');
-
-  // Build full invoice in a hidden iframe, then use print/screenshot approach
-  // Since html2canvas is not available, we send a text summary + notify user
-  const textBill = `*Chaturthi Surgicals*\n_Wholesale Surgical Instruments_\n\n` +
-    `📋 *${data.type}*\n` +
-    `Bill No: *${data.no}*\n` +
-    `Date: ${fmtDate(data.date)}\n\n` +
-    `*Bill To:*\n${data.custName}\n${data.custCity||''}\n\n` +
-    `*Items:*\n` +
-    data.items.filter(i=>i.productName).map((i,idx) =>
-      `${idx+1}. ${i.productName} — ${i.qty} ${i.unit} × ₹${fmt(i.rate)} = ₹${fmt(i.qty*i.rate*(1+i.gst/100))}`
-    ).join('\n') +
-    `\n\n💰 *Grand Total: ₹${fmt(data.grand)}*\n` +
-    `_(incl. GST ₹${fmt(data.totalGst)})_\n\n` +
-    `Payment: ${data.paymode} | Terms: ${data.terms}\n` +
-    `Thank you for your business! 🙏`;
+  showToast('Preparing bill PDF...','⏳');
 
   const digits = phone.replace(/\D/g,'');
   if (digits.length < 10) {
@@ -2790,12 +2894,63 @@ async function sendBillViaWhatsApp() {
     return;
   }
   try {
+    const pdf = await generateBillPdfPayload(data);
     saveBillRecord();
-    await window.electronAPI.whatsappSendBill({ phone: fullNumber, message: textBill });
-    showToast(`Bill sent to +${fullNumber} via WhatsApp`, '✅');
+    await window.electronAPI.whatsappSendBill({
+      phone: fullNumber,
+      pdfBase64: pdf.pdfBase64,
+      fileName: pdf.fileName,
+      caption: buildBillSummaryText(data)
+    });
+    showToast(`Bill PDF sent to +${fullNumber} via WhatsApp`, '✅');
   } catch (err) {
     showToast(`Send failed: ${err.message || 'unknown error'}`, '⚠️');
   }
+}
+
+async function sendBillViaGmail() {
+  if (!window.electronAPI?.gmailSendBill || !window.electronAPI?.billGeneratePdf) {
+    showToast('Use desktop app to send via Gmail', '⚠️');
+    return;
+  }
+  const data = getBillData();
+  if (!data.custName) { showToast('Add customer name first','⚠️'); return; }
+  if (!hasBasicEmailFormat(data.custEmail)) {
+    showToast('Please enter a valid customer email for Gmail sending', '⚠️');
+    return;
+  }
+  const senderEmail = (document.getElementById('gmail-sender-email')?.value || '').trim();
+  const appPassword = (document.getElementById('gmail-app-password')?.value || '').trim();
+  if (!hasBasicEmailFormat(senderEmail) || !appPassword) {
+    showToast('Add valid Gmail sender email and app password', '⚠️');
+    return;
+  }
+  saveBillingCommInfo();
+  try {
+    showToast('Preparing bill PDF...','⏳');
+    const pdf = await generateBillPdfPayload(data);
+    saveBillRecord();
+    await window.electronAPI.gmailSendBill({
+      senderEmail,
+      appPassword,
+      recipientEmail: data.custEmail.trim(),
+      subject: `${data.type} ${data.no ? `- ${data.no}` : ''}`.trim(),
+      text: buildBillSummaryText(data),
+      pdfBase64: pdf.pdfBase64,
+      fileName: pdf.fileName
+    });
+    showToast(`Bill PDF sent to ${data.custEmail} via Gmail`, '✅');
+  } catch (err) {
+    showToast(`Gmail send failed: ${err.message || 'unknown error'}`, '⚠️');
+  }
+}
+
+function sendBillToCustomer() {
+  if (getSelectedBillSendChannel() === BILL_CHANNEL_GMAIL) {
+    sendBillViaGmail();
+    return;
+  }
+  sendBillViaWhatsApp();
 }
 
 if (window.electronAPI?.onWhatsAppStatus) {

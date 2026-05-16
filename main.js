@@ -2,6 +2,7 @@ const { app, BrowserWindow, Menu, dialog, shell, ipcMain } = require('electron')
 const path = require('path');
 const fs = require('fs');
 const QRCode = require('qrcode');
+const nodemailer = require('nodemailer');
 
 let mainWindow;
 let waSocket;
@@ -81,6 +82,50 @@ function scheduleReconnect() {
 function parseDisconnectCode(lastDisconnect) {
   if (!lastDisconnect || !lastDisconnect.error) return undefined;
   return lastDisconnect.error?.output?.statusCode || lastDisconnect.error?.statusCode;
+}
+
+function getSafeBillFileName(input = '') {
+  const trimmed = String(input || '').trim();
+  const safe = trimmed.replace(/[^a-zA-Z0-9_-]+/g, '_').replace(/^_+|_+$/g, '');
+  return `${safe || `bill_${Date.now()}`}.pdf`;
+}
+
+function decodeBase64Pdf(pdfBase64) {
+  const normalized = String(pdfBase64 || '').replace(/^data:application\/pdf;base64,/, '').trim();
+  if (!normalized) return null;
+  return Buffer.from(normalized, 'base64');
+}
+
+async function generateBillPdfBuffer(documentHTML) {
+  if (!documentHTML || typeof documentHTML !== 'string') {
+    throw new Error('Invalid bill document for PDF generation.');
+  }
+
+  const pdfWindow = new BrowserWindow({
+    show: false,
+    width: 900,
+    height: 1200,
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      javascript: false
+    }
+  });
+
+  try {
+    const dataUrl = `data:text/html;charset=utf-8,${encodeURIComponent(documentHTML)}`;
+    await pdfWindow.loadURL(dataUrl);
+    return await pdfWindow.webContents.printToPDF({
+      printBackground: true,
+      pageSize: 'A4',
+      marginsType: 1,
+      preferCSSPageSize: true
+    });
+  } finally {
+    if (!pdfWindow.isDestroyed()) {
+      pdfWindow.destroy();
+    }
+  }
 }
 
 async function startWhatsApp() {
@@ -297,26 +342,108 @@ ipcMain.handle('whatsapp:disconnect', async () => {
 
 ipcMain.handle('whatsapp:send-bill', async (_event, payload = {}) => {
   if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
-    throw new Error('Send payload must be an object with phone and message fields.');
+    throw new Error('Send payload must be an object with phone and pdfBase64 fields.');
   }
   const phone = String(payload.phone || '').replace(/\D/g, '');
-  const message = String(payload.message || '');
+  const pdfBuffer = decodeBase64Pdf(payload.pdfBase64);
+  const fileName = getSafeBillFileName(payload.fileName);
+  const caption = String(payload.caption || '').trim();
   if (!waStatus.connected || !waSocket) {
     throw new Error('WhatsApp is not connected. Please connect first.');
   }
   if (!phone || phone.length < 10) {
     throw new Error('Invalid customer phone number.');
   }
-  if (!message.trim()) {
-    throw new Error('Bill message is empty.');
+  if (!pdfBuffer || !pdfBuffer.length) {
+    throw new Error('Bill PDF is empty.');
   }
   const jid = `${phone}@s.whatsapp.net`;
   try {
-    await waSocket.sendMessage(jid, { text: message });
+    await waSocket.sendMessage(jid, {
+      document: pdfBuffer,
+      mimetype: 'application/pdf',
+      fileName,
+      ...(caption ? { caption } : {})
+    });
     return { ok: true };
   } catch (err) {
-    logWAError('Message send failed', err);
-    throw new Error('Failed to send WhatsApp message. Please retry.');
+    logWAError('PDF send failed', err);
+    throw new Error('Failed to send bill PDF on WhatsApp. Please retry.');
+  }
+});
+
+ipcMain.handle('bill:generate-pdf', async (_event, payload = {}) => {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    throw new Error('Payload must be an object.');
+  }
+  const documentHTML = String(payload.documentHTML || '');
+  const fileName = getSafeBillFileName(payload.fileName || payload.billNo || 'bill');
+  const pdfBuffer = await generateBillPdfBuffer(documentHTML);
+  return {
+    ok: true,
+    pdfBase64: pdfBuffer.toString('base64'),
+    fileName
+  };
+});
+
+ipcMain.handle('gmail:send-bill', async (_event, payload = {}) => {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    throw new Error('Payload must be an object.');
+  }
+
+  const senderEmail = String(payload.senderEmail || '').trim();
+  const appPassword = String(payload.appPassword || '').trim();
+  const recipientEmail = String(payload.recipientEmail || '').trim();
+  const subject = String(payload.subject || 'Bill from Chaturthi Surgicals').trim();
+  const text = String(payload.text || 'Please find your bill attached.').trim();
+  const fileName = getSafeBillFileName(payload.fileName || 'bill');
+  const pdfBuffer = decodeBase64Pdf(payload.pdfBase64);
+
+  if (!senderEmail || !appPassword || !recipientEmail) {
+    throw new Error('Gmail sender, app password, and customer email are required.');
+  }
+  if (!pdfBuffer || !pdfBuffer.length) {
+    throw new Error('Bill PDF is empty.');
+  }
+
+  try {
+    const transporter = nodemailer.createTransport({
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true,
+      auth: {
+        user: senderEmail,
+        pass: appPassword
+      }
+    });
+
+    try {
+      await transporter.verify();
+    } catch (err) {
+      throw new Error('Gmail authentication failed. Check sender email and app password.');
+    }
+
+    await transporter.sendMail({
+      from: senderEmail,
+      to: recipientEmail,
+      subject,
+      text,
+      attachments: [
+        {
+          filename: fileName,
+          content: pdfBuffer,
+          contentType: 'application/pdf'
+        }
+      ]
+    });
+
+    return { ok: true };
+  } catch (err) {
+    console.error('[Gmail] Failed to send bill', err);
+    if (String(err.message || '').includes('authentication failed')) {
+      throw err;
+    }
+    throw new Error('Failed to send bill via Gmail. Check sender credentials and internet.');
   }
 });
 
